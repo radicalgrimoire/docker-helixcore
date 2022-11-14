@@ -1,0 +1,67 @@
+name: helix-p4d
+
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  # TODO: Change variable to your image's name.
+  IMAGE_NAME: helix-p4d
+  HELIXCORE_VERSION: 2022.1-
+
+jobs:
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run tests
+        run: |
+            docker build -t $GITHUB_WORKFLOW -f ./build/Dockerfile ./build
+#          if [ -f docker-compose.yml ]; then
+#            docker-compose --file docker-compose.yml build --no-cache
+#          else
+#            docker build . --file ./p4d-ubuntu/Dockerfile.$OS_NAME
+#          fi
+
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+    # Ensure test job passes before pushing image.
+    needs: test
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build -t $GITHUB_WORKFLOW -f ./build/Dockerfile ./build
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$GITHUB_WORKFLOW
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo $GITHUB_RUN_NUMBER
+
+          docker tag $GITHUB_WORKFLOW $IMAGE_ID:$HELIXCORE_VERSION.$GITHUB_RUN_NUMBER
+          docker push $IMAGE_ID:$HELIXCORE_VERSION.$GITHUB_RUN_NUMBER
+
+          docker tag $GITHUB_WORKFLOW $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
+
