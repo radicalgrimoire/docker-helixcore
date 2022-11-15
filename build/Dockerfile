@@ -52,9 +52,18 @@ RUN chmod +x /usr/local/bin/run.sh \
     && chmod 644 /etc/logrotate.d/p4.events \
     && chmod 644 /etc/logrotate.d/p4.integrity \
     && chmod 644 /etc/logrotate.d/p4.log \
+    && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
     && curl -kL https://bootstrap.pypa.io/get-pip.py | python3 \
     && pip install p4python \
     && bash /usr/local/bin/init.sh
+
+WORKDIR /opt/helix-authentication-extension
+
+RUN p4 extension --package loginhook \
+    && p4 extension --install loginhook.p4-extension -y
+
+WORKDIR /
+
 
 EXPOSE 1666
 

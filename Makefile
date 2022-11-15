@@ -1,6 +1,6 @@
 STACK=helixcore
 COMPOSE_FILE=docker-compose.yml
-CONTAINER=${STACK}-helixcore-1
+CONTAINER=helix-p4d
 
 start:
 	docker-compose -f ${COMPOSE_FILE} -p ${STACK} up -d
