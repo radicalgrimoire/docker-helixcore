@@ -57,13 +57,6 @@ RUN chmod +x /usr/local/bin/run.sh \
     && pip install p4python \
     && bash /usr/local/bin/init.sh
 
-WORKDIR /opt/helix-authentication-extension
-
-RUN p4 extension --package loginhook \
-    && p4 extension --install loginhook.p4-extension -y
-
-WORKDIR /
-
 
 EXPOSE 1666
 
