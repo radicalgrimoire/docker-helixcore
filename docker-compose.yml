@@ -13,7 +13,7 @@ volumes:
 services:
   helixcore:
     container_name: helix-p4d
-    image: p4d
+    image: helix-p4d
     build:
       context: ./p4d
       dockerfile: Dockerfile
