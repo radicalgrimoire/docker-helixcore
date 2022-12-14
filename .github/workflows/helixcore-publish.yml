@@ -11,7 +11,7 @@ on:
 env:
   # TODO: Change variable to your image's name.
   IMAGE_NAME: helix-p4d
-  HELIXCORE_VERSION: 2022.1-2361553
+  HELIXCORE_VERSION: 2022.2-2369846
 
 jobs:
   # Run tests.
