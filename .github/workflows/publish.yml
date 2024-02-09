@@ -1,0 +1,79 @@
+name: publish
+
+on:
+  workflow_call:
+    inputs:
+      docker_files_name:
+        description: Dockerfile's name
+        required: true
+        type: string
+      version_substr:
+        description: Version substring
+        required: false
+        type: string
+
+env:
+  VERSION: ${{ vars.VERSION }}
+  P4NAME: ${{ vars.P4NAME }}
+  P4TCP: ${{ vars.P4TCP }}
+  P4USER: ${{ secrets.P4USER }}
+  P4PASSWD: ${{ secrets.P4PASSWD }}
+  P4HOME: ${{ vars.P4HOME }}
+  P4ROOT: ${{ vars.P4HOME }}/${{ vars.P4NAME }}
+  CASE_INSENSITIVE: ${{ vars.CASE_INSENSITIVE }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+
+jobs:
+
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  # TAG_SUFFIX="nightly-$(date +'%Y%m%d')"
+  publish:
+    # Ensure test job passes before pushing image.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: |
+            docker build \
+             -t $IMAGE_NAME \
+             --build-arg VERSION=$VERSION \
+             --build-arg P4NAME=$P4NAME \
+             --build-arg P4TCP=$P4TCP \
+             --build-arg P4USER=$P4USER \
+             --build-arg P4PASSWD=$P4PASSWD \
+             --build-arg P4HOME=$P4HOME \
+             --build-arg P4ROOT=$P4ROOT \
+             --build-arg CASE_INSENSITIVE=$CASE_INSENSITIVE \
+             -f ./build/${{ inputs.docker_files_name }} ./build
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Set current datetime as env variable
+        env:
+          TZ: 'Asia/Tokyo'
+        run: echo "CURRENT_DATETIME=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      - name: Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME
+
+          # Convert to lowercase.
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # If the event that triggered this workflow is a schedule event, then tag the image as "nightly".
+          TAG_SUFFIX=""
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            TAG_SUFFIX="nightly"
+          else
+            TAG_SUFFIX="latest"
+            
+            docker tag $IMAGE_NAME $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
+            docker push $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
+          fi
+
+          docker tag $IMAGE_NAME $IMAGE_ID:$TAG_SUFFIX
+          docker push $IMAGE_ID:$TAG_SUFFIX
