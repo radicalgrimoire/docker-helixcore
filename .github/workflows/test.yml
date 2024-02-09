@@ -7,13 +7,7 @@ on:
         description: Dockerfile's name
         required: true
         type: string
-    secrets:
-      p4user:
-        description: Perforce user
-        required: true
-      p4password:
-        description: Perforce password
-        required: true
+
 env:
   VERSION: ${{ vars.VERSION }}
   P4NAME: ${{ vars.P4NAME }}

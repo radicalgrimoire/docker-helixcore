@@ -21,8 +21,8 @@ on:
 jobs:
   # Run tests.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  # if: github.event_name == 'push' || github.event_name == 'pull_request'
   test:
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
     uses: ./.github/workflows/test.yml
     with:
       # The name of the image to test.
@@ -34,6 +34,7 @@ jobs:
   # TAG_SUFFIX="nightly-$(date +'%Y%m%d')"
   push:
     uses: ./.github/workflows/publish.yml
+    needs: test
     with:
       # The name of the image to push.
       docker_files_name: 'Dockerfile'
