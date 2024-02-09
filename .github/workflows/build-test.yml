@@ -27,6 +27,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       docker_files_name: Dockerfile.v2
+    secrets: inherit
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
@@ -36,3 +37,4 @@ jobs:
     with:
       docker_files_name: Dockerfile.v2
       version_substr: v2.
+    secrets: inherit
