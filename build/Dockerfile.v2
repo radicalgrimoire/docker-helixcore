@@ -12,15 +12,14 @@ COPY files/CheckCaseTrigger*.py /usr/local/bin/
 COPY files/P4Triggers.py /usr/local/bin/P4Triggers.py
 
 ARG P4NAME
-ARG P4TCP
+ARG P4PORT
 ARG P4USER
 ARG P4PASSWD
 ARG CASE_INSENSITIVE
 ARG P4HOME
 
 ENV P4NAME=$P4NAME \
-    P4TCP=$P4TCP \
-    P4PORT=ssl:$P4TCP \
+    P4PORT=$P4PORT \
     P4USER=$P4USER \
     P4PASSWD=$P4PASSWD \
     P4HOME=$P4HOME \
