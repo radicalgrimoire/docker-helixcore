@@ -15,7 +15,7 @@ on:
 env:
   VERSION: ${{ vars.VERSION }}
   P4NAME: ${{ vars.P4NAME }}
-  P4TCP: ${{ vars.P4TCP }}
+  P4PORT: ${{ vars.P4PORT }}
   P4USER: ${{ secrets.P4USER }}
   P4PASSWD: ${{ secrets.P4PASSWD }}
   P4HOME: ${{ vars.P4HOME }}
@@ -41,7 +41,7 @@ jobs:
              -t $IMAGE_NAME \
              --build-arg VERSION=$VERSION \
              --build-arg P4NAME=$P4NAME \
-             --build-arg P4TCP=$P4TCP \
+             --build-arg P4PORT=$P4PORT \
              --build-arg P4USER=$P4USER \
              --build-arg P4PASSWD=$P4PASSWD \
              --build-arg P4HOME=$P4HOME \
