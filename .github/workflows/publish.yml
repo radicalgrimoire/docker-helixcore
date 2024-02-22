@@ -68,12 +68,13 @@ jobs:
           TAG_SUFFIX=""
           if [ "${{ github.event_name }}" == "schedule" ]; then
             TAG_SUFFIX="nightly"
-          else
-            TAG_SUFFIX="latest"
-            
-            docker tag $IMAGE_NAME $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
-            docker push $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
+            docker tag $IMAGE_NAME $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
+            docker push $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX  
           fi
+
+          TAG_SUFFIX="latest"
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
+          docker push $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
 
           docker tag $IMAGE_NAME $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
           docker push $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
