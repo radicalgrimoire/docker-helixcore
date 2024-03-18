@@ -1,20 +1,6 @@
 name: build-test
 
 on:
-  schedule:
-    - cron: '0 1 * * *'
-
-  push:
-    branches:
-      - 'main'
-    paths:
-      - 'build/**'
-
-  pull_request:
-    branches:
-      - 'main'
-    paths:
-      - 'build/**'
 
   workflow_dispatch:
   
