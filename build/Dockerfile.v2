@@ -4,14 +4,7 @@ LABEL org.opencontainers.image.maintainer="ueno.s <ueno.s@gamestudio.co.jp>"
 ARG VERSION
 LABEL org.opencontainers.image.description="helix-p4d version: ${VERSION}"
 
-# Add external files
-COPY files/run.sh /usr/local/bin/run.sh
-COPY files/init.sh /usr/local/bin/init.sh
-COPY files/p4.* /etc/logrotate.d/
-COPY files/CheckCaseTrigger*.py /usr/local/bin/
-COPY files/P4Triggers.py /usr/local/bin/P4Triggers.py
-
-# Set environment variables
+# Set default values for ARGs
 ARG P4NAME
 ARG P4PORT
 ARG P4USER
@@ -27,25 +20,36 @@ ENV P4NAME=$P4NAME \
     P4ROOT=$P4HOME/$P4NAME \
     CASE_INSENSITIVE=$CASE_INSENSITIVE
 
-# Set timezone
-RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+# Set timezone, install packages, set locale, and install helix-p4d
+RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    language-pack-ja-base language-pack-ja \
+    wget gnupg less tzdata curl jq git openssl sudo vim unzip cron logrotate init systemd \
+    && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
+    && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
+    && update-alternatives --set editor /usr/bin/vim.basic \
+    && wget -qO - https://package.perforce.com/perforce.pubkey | apt-key add - \
+    && echo "deb http://package.perforce.com/apt/ubuntu focal release" >> /etc/apt/sources.list.d/perforce.list \
+    && apt-get update && apt-get -y install helix-p4d \
+    && chmod +x /usr/local/bin/init.sh \
+    && chmod +x /usr/local/bin/run.sh \
+    && chmod 644 /etc/logrotate.d/p4.* \
+    && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
+    && bash /usr/local/bin/init.sh \
+    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && pip3 install --no-cache-dir p4python \
+    && apt-get remove -y python3-pip \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install packages and set locale
-RUN apt-get update -y && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends language-pack-ja-base language-pack-ja wget gnupg less language-pack-ja-base language-pack-ja tzdata curl jq git openssl sudo vim unzip cron logrotate init systemd && \
-    echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc && \
-    echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc
 
-# set vim as default editor
-RUN sudo update-alternatives --set editor /usr/bin/vim.basic
+EXPOSE 1666
 
-# pip install
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip && \
-    pip3 install --no-cache-dir p4python && \
-    apt-get remove -y python3-pip && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+HEALTHCHECK \
+    --interval=2m \
+    --timeout=30s \
+    CMD p4 -p ssl:1666 info -s > /dev/null || exit 1
 
+CMD ["/usr/local/bin/run.sh"]
