@@ -4,6 +4,13 @@ LABEL org.opencontainers.image.maintainer="ueno.s <ueno.s@gamestudio.co.jp>"
 ARG VERSION
 LABEL org.opencontainers.image.description="helix-p4d version: ${VERSION}"
 
+# Add external files
+COPY files/run.sh /usr/local/bin/run.sh
+COPY files/init.sh /usr/local/bin/init.sh
+COPY files/p4.* /etc/logrotate.d/
+COPY files/CheckCaseTrigger*.py /usr/local/bin/
+COPY files/P4Triggers.py /usr/local/bin/P4Triggers.py
+
 # Set default values for ARGs
 ARG P4NAME
 ARG P4PORT
