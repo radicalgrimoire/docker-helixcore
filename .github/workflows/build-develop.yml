@@ -8,13 +8,13 @@ on:
     branches:
       - 'main'
     paths:
-      - 'build/**'
+      - 'build/Dockerfile'
 
   pull_request:
     branches:
       - 'main'
     paths:
-      - 'build/**'
+      - 'build/Dokerfile'
 
   workflow_dispatch:
  
