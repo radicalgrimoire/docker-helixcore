@@ -21,7 +21,7 @@ ENV P4NAME=$P4NAME \
     CASE_INSENSITIVE=$CASE_INSENSITIVE
 
 # Set timezone, install packages, set locale, and install helix-p4d
-RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo && \
+RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends \
     language-pack-ja-base language-pack-ja \
