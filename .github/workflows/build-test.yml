@@ -5,12 +5,8 @@ on:
   
 jobs:
   
-  # Run tests.
-  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
-  # if: github.event_name == 'push' || github.event_name == 'pull_request'
   test:
     uses: ./.github/workflows/test.yml
     with:
       docker_files_name: Dockerfile.v2
     secrets: inherit
-

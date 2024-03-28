@@ -10,12 +10,6 @@ on:
     paths:
       - 'build/Dockerfile'
 
-  pull_request:
-    branches:
-      - 'main'
-    paths:
-      - 'build/Dokerfile'
-
   workflow_dispatch:
  
 jobs:

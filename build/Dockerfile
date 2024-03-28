@@ -1,9 +1,8 @@
-FROM ubuntu:focal
+FROM ubuntu:jammy
 LABEL org.opencontainers.image.maintainer="ueno.s <ueno.s@gamestudio.co.jp>"
 
 ARG VERSION
 LABEL org.opencontainers.image.description="helix-p4d version: ${VERSION}"
-
 
 # Add external files
 COPY files/run.sh /usr/local/bin/run.sh
@@ -34,8 +33,10 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
     && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
     && wget -qO - https://package.perforce.com/perforce.pubkey | apt-key add - \
-    && echo "deb http://package.perforce.com/apt/ubuntu focal release" >> /etc/apt/sources.list.d/perforce.list \
-    && apt-get update && apt-get -y install helix-p4d python2 python3 perforce-p4python perforce-p4python3 python3-distutils \
+    && echo "deb http://package.perforce.com/apt/ubuntu focal release" > /etc/apt/sources.list.d/perforce.list \
+    && sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7123CB760FF18869 \
+    && apt-get update && apt-get -y install helix-p4d python3 \
+    && echo "deb http://package.perforce.com/apt/ubuntu jammy release" > /etc/apt/sources.list.d/perforce.list \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && chmod +x /usr/local/bin/init.sh \
