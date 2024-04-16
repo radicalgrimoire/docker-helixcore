@@ -17,13 +17,6 @@ services:
     build:
       context: ./p4d
       dockerfile: Dockerfile
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - seccomp:unconfined
-    privileged: true
-    command:
-      - /sbin/init
     volumes:
       - 'servers:/opt/perforce/servers'
     networks:
