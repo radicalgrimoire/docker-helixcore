@@ -2,19 +2,13 @@ name: build-develop
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 10 * * 1'
 
   push:
     branches:
       - 'main'
     paths:
-      - 'build/**'
-
-  pull_request:
-    branches:
-      - 'main'
-    paths:
-      - 'build/**'
+      - 'build/Dockerfile'
 
   workflow_dispatch:
  
