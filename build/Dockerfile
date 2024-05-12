@@ -44,6 +44,8 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
     && bash /usr/local/bin/init.sh
 
+COPY files/master.conf /etc/perforce/p4dctl.conf.d/master.conf
+
 EXPOSE 1666
 
 HEALTHCHECK \
