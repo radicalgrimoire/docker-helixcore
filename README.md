@@ -16,19 +16,3 @@ docker-compose -f docker-compose.yml up -d
 ```
 docker exec -it helix-p4d bash
 ```
-
-## Enter the Perforce container and change to a perforce user
-
-```
-su perforce -
-```
-
-## Once you have changed to the perforce user, execute the command to log in to perforce
-
-※ To make the p4 trigger work.
-
-```
-p4 login
-```
-
-
