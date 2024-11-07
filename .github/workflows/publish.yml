@@ -4,12 +4,16 @@ on:
   workflow_call:
     inputs:
       docker_files_name:
-        description: Dockerfile's name
+        description: Dockerfile
+        required: true
+        type: string
+      image_name:
+        description: Docker image
         required: true
         type: string
       version_substr:
         description: Version substring
-        required: false
+        required: true
         type: string
 
 env:
@@ -21,7 +25,7 @@ env:
   P4HOME: ${{ vars.P4HOME }}
   P4ROOT: ${{ vars.P4HOME }}/${{ vars.P4NAME }}
   CASE_INSENSITIVE: ${{ vars.CASE_INSENSITIVE }}
-  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  IMAGE_NAME: ${{ inputs.image_name }}
 
 jobs:
 
@@ -38,7 +42,7 @@ jobs:
       - name: Build image
         run: |
             docker build \
-             -t $IMAGE_NAME \
+             -t ${{ inputs.image_name }} \
              --build-arg VERSION=$VERSION \
              --build-arg P4NAME=$P4NAME \
              --build-arg P4PORT=$P4PORT \
@@ -59,7 +63,7 @@ jobs:
 
       - name: Push image
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=ghcr.io/${{ github.repository }}/${{ inputs.image_name }}
 
           # Convert to lowercase.
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
@@ -68,13 +72,13 @@ jobs:
           TAG_SUFFIX=""
           if [ "${{ github.event_name }}" == "schedule" ]; then
             TAG_SUFFIX="nightly"
-            docker tag $IMAGE_NAME $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
+            docker tag ${{ inputs.image_name }} $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
             docker push $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX  
           fi
 
           TAG_SUFFIX="latest"
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
+          docker tag ${{ inputs.image_name }} $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
           docker push $IMAGE_ID:$VERSION.${{ inputs.version_substr }}$GITHUB_RUN_NUMBER
 
-          docker tag $IMAGE_NAME $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
+          docker tag ${{ inputs.image_name }} $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX
           docker push $IMAGE_ID:${{ inputs.version_substr }}$TAG_SUFFIX

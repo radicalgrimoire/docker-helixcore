@@ -18,4 +18,13 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       docker_files_name: Dockerfile
+      image_name: helix-p4d
     secrets: inherit
+
+  test-v2:
+    uses: ./.github/workflows/test.yml
+    with:
+      docker_files_name: Dockerfile.v2
+      image_name: helix-p4d
+    secrets: inherit
+  
