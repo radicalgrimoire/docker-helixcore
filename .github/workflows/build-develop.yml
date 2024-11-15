@@ -11,9 +11,15 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       # The name of the image to test.
-      docker_files_name: 'Dockerfile'
+      docker_files_name: Dockerfile
       image_name: helix-p4d
       version_substr: ''
+      version: ${{ vars.VERSION }}
+      p4root: ${{ vars.P4ROOT }}
+      p4name: ${{ vars.P4NAME }}
+      p4port: ${{ vars.P4PORT }}
+      p4home: ${{ vars.P4HOME }}
+      case_insensitive: ${{ vars.CASE_INSENSITIVE }}
     secrets: inherit
 
   # Push image to GitHub Packages.
@@ -24,7 +30,13 @@ jobs:
     needs: test
     with:
       # The name of the image to push.
-      docker_files_name: 'Dockerfile'
+      docker_files_name: Dockerfile
       image_name: helix-p4d
       version_substr: ''
+      version: ${{ vars.VERSION }}
+      p4root: ${{ vars.P4ROOT }}
+      p4name: ${{ vars.P4NAME }}
+      p4port: ${{ vars.P4PORT }}
+      p4home: ${{ vars.P4HOME }}
+      case_insensitive: ${{ vars.CASE_INSENSITIVE }}
     secrets: inherit

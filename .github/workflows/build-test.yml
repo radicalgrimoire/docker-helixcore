@@ -20,6 +20,12 @@ jobs:
       docker_files_name: Dockerfile
       image_name: helix-p4d
       version_substr: ''
+      version: ${{ vars.VERSION }}
+      p4root: ${{ vars.P4ROOT }}
+      p4name: ${{ vars.P4NAME }}
+      p4port: ${{ vars.P4PORT }}
+      p4home: ${{ vars.P4HOME }}
+      case_insensitive: ${{ vars.CASE_INSENSITIVE }}
     secrets: inherit
 
   test-v2:
@@ -28,5 +34,11 @@ jobs:
       docker_files_name: Dockerfile.v2
       image_name: helix-p4d
       version_substr: ''
+      version: ${{ vars.VERSION }}
+      p4root: ${{ vars.P4ROOT }}
+      p4name: ${{ vars.P4NAME }}
+      p4port: ${{ vars.P4PORT }}
+      p4home: ${{ vars.P4HOME }}
+      case_insensitive: ${{ vars.CASE_INSENSITIVE }}
     secrets: inherit
   

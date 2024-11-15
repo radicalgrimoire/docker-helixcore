@@ -4,27 +4,32 @@ on:
   workflow_call:
     inputs:
       docker_files_name:
-        description: Dockerfile's name
         required: true
         type: string
       image_name:
-        description: Docker image
         required: true
         type: string
       version_substr:
-        description: Version substring
+        type: string
+      version:
+        required: true
+        type: string
+      p4root:
+        required: true
+        type: string
+      p4name:
+        required: true
+        type: string
+      p4port:
+        required: true
+        type: string
+      p4home:
+        required: true
+        type: string
+      case_insensitive:
         required: true
         type: string
 
-env:
-  VERSION: ${{ vars.VERSION }}
-  P4NAME: ${{ vars.P4NAME }}
-  P4PORT: ${{ vars.P4PORT }}
-  P4USER: ${{ secrets.P4USER }}
-  P4PASSWD: ${{ secrets.P4PASSWD }}
-  P4HOME: ${{ vars.P4HOME }}
-  P4ROOT: ${{ vars.P4HOME }}/${{ vars.P4NAME }}
-  CASE_INSENSITIVE: ${{ vars.CASE_INSENSITIVE }}
 
 jobs:
 
@@ -36,14 +41,14 @@ jobs:
 
       - name: Run tests
         run: |
-            docker build \
+           docker build \
              -t ${{ inputs.image_name }} \
-             --build-arg VERSION=$VERSION \
-             --build-arg P4NAME=$P4NAME \
-             --build-arg P4PORT=$P4PORT \
-             --build-arg P4USER=$P4USER \
-             --build-arg P4PASSWD=$P4PASSWD \
-             --build-arg P4HOME=$P4HOME \
-             --build-arg P4ROOT=$P4ROOT \
-             --build-arg CASE_INSENSITIVE=$CASE_INSENSITIVE \
+             --build-arg VERSION=${{ inputs.version }} \
+             --build-arg P4NAME=${{ inputs.p4name }} \
+             --build-arg P4PORT=${{ inputs.p4port }} \
+             --build-arg P4USER=${{ secrets.P4USER }} \
+             --build-arg P4PASSWD=${{ secrets.P4PASSWD }} \
+             --build-arg P4HOME=${{ inputs.p4home }} \
+             --build-arg P4ROOT=${{ inputs.p4root }} \
+             --build-arg CASE_INSENSITIVE=${{ inputs.case_insensitive }} \
              -f ./build/${{ inputs.docker_files_name }} ./build
