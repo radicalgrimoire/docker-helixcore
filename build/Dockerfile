@@ -10,6 +10,8 @@ COPY files/init.sh /usr/local/bin/init.sh
 COPY files/p4.* /etc/logrotate.d/
 COPY files/CheckCaseTrigger*.py /usr/local/bin/
 COPY files/P4Triggers.py /usr/local/bin/P4Triggers.py
+COPY files/admin.txt /opt/perforce/admin.txt
+
 
 ARG P4NAME
 ARG P4PORT

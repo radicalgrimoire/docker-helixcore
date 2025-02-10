@@ -44,6 +44,9 @@ pushd /opt/perforce
 p4 trust -y -f
 popd
 
+p4 -p $P4PORT group -i < /opt/perforce/admin.txt
+
+
 exit
 
 fi
