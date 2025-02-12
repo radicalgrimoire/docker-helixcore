@@ -52,7 +52,7 @@ MaxOpenFiles:	unset
 
 MaxMemory:	unset
 
-Timeout:	unset
+Timeout:	unlimited
 
 PasswordTimeout:	unset
 
