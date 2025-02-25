@@ -17,6 +17,7 @@ services:
     build:
       context: ./p4d
       dockerfile: Dockerfile
+    init: true
     volumes:
       - 'servers:/opt/perforce/servers'
     networks:
