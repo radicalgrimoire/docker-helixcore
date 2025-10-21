@@ -1,0 +1,95 @@
+name: build-develop
+
+run-name: >
+  ${{ github.event_name == 'schedule' && 'Scheduled Build' || 'Manual Build' }}
+  ${{ inputs.dockerfile || 'Dockerfile' }}  
+  ${{ github.event_name == 'schedule' && '(Daily 9AM JST)' || '(On-Demand)' }}
+  by @${{ github.actor }}
+  ${{ github.sha }}
+
+on:
+  schedule:
+    # JST 朝9時 = UTC 0時（JST = UTC + 9時間）
+    - cron: '0 0 * * *'
+  
+  workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'Dockerfile to use for building'
+        required: false
+        default: 'Dockerfile'
+        type: choice
+        options:
+          - 'Dockerfile'
+          - 'Dockerfile.v2'
+ 
+jobs:
+  # Display commit information
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Display build information
+        run: |
+          echo "Build Information:"
+          echo "Event: ${{ github.event_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+          # Get last commit author and message
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an" HEAD)
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s" HEAD)
+          echo "Auther: ${COMMIT_AUTHOR} / ${COMMIT_MESSAGE}"
+
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  # if: github.event_name == 'push' || github.event_name == 'pull_request'
+  test:
+    needs: info
+    uses: ./.github/workflows/test.yml
+    with:
+      # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
+      docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
+    secrets: inherit
+
+
+  # Check if today is the designated day to push (Monday) or if manually triggered.
+  # If not, skip the push job.
+  check-day:
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      should-push: ${{ steps.check.outputs.should-push }}
+    steps:
+      - name: Check if should push
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should-push=true" >> $GITHUB_OUTPUT
+            echo "Manual execution - pushing enabled"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            # 月曜日 = 1 (0=日曜, 1=月曜, 2=火曜...)
+            DAY_OF_WEEK=$(date +%u)
+            if [ "$DAY_OF_WEEK" = "1" ]; then
+              echo "should-push=true" >> $GITHUB_OUTPUT
+              echo "Monday schedule - pushing enabled"
+            else
+              echo "should-push=false" >> $GITHUB_OUTPUT
+              echo "Not Monday - pushing disabled"
+            fi
+          else
+            echo "should-push=true" >> $GITHUB_OUTPUT
+            echo "Other event - pushing enabled"
+          fi
+
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  # TAG_SUFFIX="nightly-$(date +'%Y%m%d')"
+  push:
+    uses: ./.github/workflows/publish.yml
+    needs: [test, check-day]
+    if: needs.check-day.outputs.should-push == 'true'
+    secrets: inherit
