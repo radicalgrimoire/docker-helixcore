@@ -22,6 +22,9 @@ jobs:
   publish:
     # Ensure test job passes before pushing image.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       version: ${{ steps.p4d-version.outputs.version }}
       version_raw: ${{ steps.p4d-version.outputs.raw_version }}
