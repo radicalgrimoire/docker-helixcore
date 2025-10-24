@@ -57,33 +57,13 @@ jobs:
 
 
   # Check if today is the designated day to push (Monday) or if manually triggered.
-  # If not, skip the push job.
+  # Uses external reusable workflow for day checking logic
   check-day:
-    runs-on: ubuntu-latest
     needs: test
-    outputs:
-      should-push: ${{ steps.check.outputs.should-push }}
-    steps:
-      - name: Check if should push
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "should-push=true" >> $GITHUB_OUTPUT
-            echo "Manual execution - pushing enabled"
-          elif [ "${{ github.event_name }}" = "schedule" ]; then
-            # 月曜日 = 1 (0=日曜, 1=月曜, 2=火曜...)
-            DAY_OF_WEEK=$(date +%u)
-            if [ "$DAY_OF_WEEK" = "1" ]; then
-              echo "should-push=true" >> $GITHUB_OUTPUT
-              echo "Monday schedule - pushing enabled"
-            else
-              echo "should-push=false" >> $GITHUB_OUTPUT
-              echo "Not Monday - pushing disabled"
-            fi
-          else
-            echo "should-push=true" >> $GITHUB_OUTPUT
-            echo "Other event - pushing enabled"
-          fi
+    uses: radicalgrimoire/github-actions-utils/.github/workflows/check-schedule-day.yml@main
+    with:
+      target_day: '1'      # Monday
+      timezone: 'Asia/Tokyo'
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
