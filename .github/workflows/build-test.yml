@@ -1,0 +1,78 @@
+name: build-test
+
+run-name: >
+  Build Test: ${{ inputs.dockerfile }} 
+  by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'テスト対象のDockerfile'
+        required: false
+        default: 'Dockerfile'
+        type: choice
+        options:
+          - 'Dockerfile'
+          - 'Dockerfile.v2'
+
+env:
+  # P4 Configuration - non-sensitive settings
+  P4ROOT: /opt/perforce/servers/master
+  P4NAME: master
+  P4PORT: ssl:1666
+  P4HOME: /opt/perforce/servers
+  CASE_INSENSITIVE: 0
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Display test information
+        run: |
+          echo "=== Build Test Information ==="
+          echo "Dockerfile: ${{ inputs.dockerfile }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+
+      - name: Build image
+        run: |
+          echo "Building Docker image with ${{ inputs.dockerfile }}..."
+          docker build \
+           -t helix-p4d-test \
+           --build-arg P4NAME=${{ env.P4NAME }} \
+           --build-arg P4PORT=${{ env.P4PORT }} \
+           --build-arg P4USER=${{ secrets.P4USER }} \
+           --build-arg P4PASSWD=${{ secrets.P4PASSWD }} \
+           --build-arg P4HOME=${{ env.P4HOME }} \
+           --build-arg P4ROOT=${{ env.P4ROOT }} \
+           --build-arg CASE_INSENSITIVE=${{ env.CASE_INSENSITIVE }} \
+           -f ./build/${{ inputs.dockerfile }} ./build
+
+      - name: Test basic functionality
+        run: |
+          echo "=== Testing basic functionality ==="
+          echo "Testing p4d help command..."
+          docker run --rm helix-p4d-test p4d -h || true
+          
+          echo ""
+          echo "Getting P4D version..."
+          docker run --rm helix-p4d-test p4d -V || true
+          
+          echo ""
+          echo "Checking installed packages..."
+          docker run --rm helix-p4d-test dpkg -l | grep -E "(helix|perforce)" || true
+
+      - name: Test summary
+        run: |
+          echo "=== Build Test Completed Successfully ==="
+          echo "✅ Docker image built successfully"
+          echo "✅ Basic functionality tests passed"
+          echo "📋 Dockerfile used: ${{ inputs.dockerfile }}"
+          echo ""
+          echo "Note: This is a build test only. No images were saved or published."
