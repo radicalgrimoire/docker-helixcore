@@ -43,6 +43,8 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && chmod +x /usr/local/bin/run.sh \
     && chmod 644 /etc/logrotate.d/p4.* \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
+    && mkdir -p ${P4ROOT} \
+    && chown perforce:perforce ${P4ROOT} \
     && bash /usr/local/bin/init.sh
 
 EXPOSE 1666
