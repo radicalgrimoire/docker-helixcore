@@ -3,7 +3,7 @@ set -e
 
 # 運用ツールのインストール
 echo "Installing runtime tools..."
-apt-get update -qq && apt-get install -y vim less
+apt-get update && apt-get install -y vim less
 echo "Runtime tools installed: vim, less"
 
 # デバッグ: 環境変数の確認

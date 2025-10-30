@@ -26,13 +26,13 @@ ENV P4NAME=$P4NAME \
     CASE_INSENSITIVE=$CASE_INSENSITIVE
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
-    && apt-get update -y \
+    && apt-get update \
     && apt-get install -y gnupg language-pack-ja-base language-pack-ja tzdata curl jq git openssl cron logrotate sudo \
     && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
     && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
     && curl -sS https://package.perforce.com/perforce.pubkey | gpg --dearmor -o /usr/share/keyrings/perforce.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/perforce.gpg] http://package.perforce.com/apt/ubuntu noble release" > /etc/apt/sources.list.d/perforce.list \
-    && apt-get update && apt-get -y install helix-p4d python3 perforce-p4python3 \
+    && apt-get update && apt-get install -y helix-p4d python3 perforce-p4python3 \
     && chmod +x /usr/local/bin/init.sh \
     && chmod +x /usr/local/bin/run.sh \
     && chmod 644 /etc/logrotate.d/p4.* \
