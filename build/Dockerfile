@@ -13,9 +13,9 @@ ARG P4NAME
 ARG P4PORT
 ARG P4USER
 ARG P4PASSWD
-ARG CASE_INSENSITIVE
 ARG P4HOME
 ARG P4ROOT
+ARG CASE_INSENSITIVE
 
 ENV P4NAME=$P4NAME \
     P4PORT=$P4PORT \
@@ -27,19 +27,20 @@ ENV P4NAME=$P4NAME \
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && apt-get update -y \
-    && apt-get install -y wget gnupg less language-pack-ja-base language-pack-ja tzdata curl jq git openssl sudo vim unzip cron logrotate init systemd \
+    && apt-get install -y gnupg language-pack-ja-base language-pack-ja tzdata curl jq git openssl cron logrotate \
     && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
     && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
     && curl -sS https://package.perforce.com/perforce.pubkey | gpg --dearmor -o /usr/share/keyrings/perforce.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/perforce.gpg] http://package.perforce.com/apt/ubuntu noble release" > /etc/apt/sources.list.d/perforce.list \
     && apt-get update && apt-get -y install helix-p4d python3 perforce-p4python3 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get autoremove -y \
     && chmod +x /usr/local/bin/init.sh \
     && chmod +x /usr/local/bin/run.sh \
     && chmod 644 /etc/logrotate.d/p4.* \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
+    && apt-get remove -y git \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
     && bash /usr/local/bin/init.sh
 
 EXPOSE 1666

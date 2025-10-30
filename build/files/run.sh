@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# 運用ツールのインストール
+echo "Installing runtime tools..."
+apt-get update -qq && apt-get install -y vim less
+echo "Runtime tools installed: vim, less"
+
 p4dctl start -t p4d $P4NAME
 sudo service cron start
 p4 trust -y -f
