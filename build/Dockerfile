@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM ubuntu:noble
 LABEL org.opencontainers.image.maintainer="ueno.s <ueno.s@gamestudio.co.jp>"
 
 # Add external files
@@ -31,11 +31,9 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && apt-get install -y wget gnupg less language-pack-ja-base language-pack-ja tzdata curl jq git openssl sudo vim unzip cron logrotate init systemd \
     && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
     && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
-    && wget -qO - https://package.perforce.com/perforce.pubkey | apt-key add - \
-    && echo "deb http://package.perforce.com/apt/ubuntu jammy release" > /etc/apt/sources.list.d/perforce.list \
+    && curl -sS https://package.perforce.com/perforce.pubkey | gpg --dearmor -o /usr/share/keyrings/perforce.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/perforce.gpg] http://package.perforce.com/apt/ubuntu noble release" > /etc/apt/sources.list.d/perforce.list \
     && apt-get update && apt-get -y install helix-p4d python3 perforce-p4python3 \
-    && P4D_VERSION=$(p4d -V | head -1 | cut -d' ' -f3 | cut -d'/' -f1) \
-    && echo "Installed P4D version: $P4D_VERSION" \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get autoremove -y \
@@ -43,8 +41,6 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && chmod +x /usr/local/bin/run.sh \
     && chmod 644 /etc/logrotate.d/p4.* \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
-    && mkdir -p ${P4ROOT} \
-    && chown perforce:perforce ${P4ROOT} \
     && bash /usr/local/bin/init.sh
 
 EXPOSE 1666
