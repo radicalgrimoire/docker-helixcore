@@ -55,21 +55,30 @@ jobs:
       docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
     secrets: inherit
 
-
   # Check if today is the designated day to push (Monday) or if manually triggered.
   # Uses external reusable workflow for day checking logic
   check-day:
     needs: test
     uses: radicalgrimoire/github-actions-utils/.github/workflows/check-schedule-day.yml@main
     with:
-      target_day: '1'      # Monday
+      schedule_type: 'weekly'
+      target_value: '1'      # Monday
       timezone: 'Asia/Tokyo'
+
+  # P4Dバージョン取得ステップ
+  get-version:
+    needs: check-day
+    uses: ./.github/workflows/get-version.yml
+    secrets: inherit
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
   # TAG_SUFFIX="nightly-$(date +'%Y%m%d')"
   push:
     uses: ./.github/workflows/publish.yml
-    needs: [test, check-day]
+    needs: [test, check-day, get-version]
     if: needs.check-day.outputs.should-push == 'true'
+    with:
+      version: ${{ needs.get-version.outputs.version }}
+      version_raw: ${{ needs.get-version.outputs.version_raw }}
     secrets: inherit

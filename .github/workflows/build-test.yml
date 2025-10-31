@@ -1,10 +1,17 @@
 name: build-test
 
 run-name: >
-  Build Test: ${{ inputs.dockerfile }} 
+  Build Test: ${{ inputs.dockerfile || 'Dockerfile' }} 
+  (${{ github.event_name }})
   by @${{ github.actor }}
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'build/**'
+      - '.github/workflows/build-test.yml'
+  
   workflow_dispatch:
     inputs:
       dockerfile:
@@ -34,7 +41,8 @@ jobs:
       - name: Display test information
         run: |
           echo "=== Build Test Information ==="
-          echo "Dockerfile: ${{ inputs.dockerfile }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Dockerfile: ${{ inputs.dockerfile || 'Dockerfile' }}"
           echo "Triggered by: ${{ github.actor }}"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
@@ -42,7 +50,8 @@ jobs:
 
       - name: Build image
         run: |
-          echo "Building Docker image with ${{ inputs.dockerfile }}..."
+          DOCKERFILE_NAME="${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "Building Docker image with $DOCKERFILE_NAME..."
           docker build \
            -t helix-p4d-test \
            --build-arg P4NAME=${{ env.P4NAME }} \
@@ -52,7 +61,7 @@ jobs:
            --build-arg P4HOME=${{ env.P4HOME }} \
            --build-arg P4ROOT=${{ env.P4ROOT }} \
            --build-arg CASE_INSENSITIVE=${{ env.CASE_INSENSITIVE }} \
-           -f ./build/${{ inputs.dockerfile }} ./build
+           -f ./build/$DOCKERFILE_NAME ./build
 
       - name: Test basic functionality
         run: |
@@ -68,11 +77,35 @@ jobs:
           echo "Checking installed packages..."
           docker run --rm helix-p4d-test dpkg -l | grep -E "(helix|perforce)" || true
 
+      - name: Check image size
+        run: |
+          echo "=== Docker Image Size Information ==="
+          docker images helix-p4d-test --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+          echo ""
+          
+          # 詳細サイズ情報
+          IMAGE_SIZE=$(docker images helix-p4d-test --format "{{.Size}}")
+          echo "📊 Image Size: $IMAGE_SIZE"
+          
+          # 圧縮サイズ（実際の転送サイズに近い）
+          echo "📦 Calculating compressed size..."
+          docker save helix-p4d-test | gzip | wc -c | awk '{printf "Compressed size: %.2f MB\n", $1/1024/1024}'
+          
+          # レイヤー情報
+          echo ""
+          echo "🔍 Image layers:"
+          docker history helix-p4d-test --format "table {{.Size}}\t{{.CreatedBy}}" | head -10
+
       - name: Test summary
         run: |
           echo "=== Build Test Completed Successfully ==="
-          echo "✅ Docker image built successfully"
+          echo "Docker image built successfully"
           echo "✅ Basic functionality tests passed"
-          echo "📋 Dockerfile used: ${{ inputs.dockerfile }}"
+          echo "📋 Dockerfile used: ${{ inputs.dockerfile || 'Dockerfile' }}"
+          
+          # 最終サイズ情報をサマリーに表示
+          IMAGE_SIZE=$(docker images helix-p4d-test --format "{{.Size}}")
+          echo "📊 Final image size: $IMAGE_SIZE"
+          
           echo ""
           echo "Note: This is a build test only. No images were saved or published."

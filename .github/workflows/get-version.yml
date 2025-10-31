@@ -1,0 +1,40 @@
+
+name: get-p4d-version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "タグ用にサニタイズされた helix-p4d のバージョン"
+        value: ${{ jobs.get-version.outputs.version }}
+      version_raw:
+        description: "生の helix-p4d バージョン"
+        value: ${{ jobs.get-version.outputs.version_raw }}
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.p4d-version.outputs.version }}
+      version_raw: ${{ steps.p4d-version.outputs.raw_version }}
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ secrets.IMAGE_NAME }}
+      - name: Load Docker image
+        run: |
+          docker load < ${{ secrets.IMAGE_NAME }}.tar
+          echo "Loaded Docker image: ${{ secrets.IMAGE_NAME }}"
+          docker images | grep ${{ secrets.IMAGE_NAME }}
+      - name: Get P4D version from container
+        id: p4d-version
+        run: |
+          echo "--- p4d -V output ---"
+          docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V
+          VERSION_RAW=$(docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V | grep '^Rev\.' || echo "unknown")
+          VERSION=$(docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V | grep '^Rev\.' | grep -oE '[0-9]{4}\.[0-9]+' | head -1 || echo "unknown")
+          echo "VERSION_RAW=$VERSION_RAW"
+          echo "VERSION=$VERSION"
+          echo "raw_version=$VERSION_RAW" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
