@@ -16,10 +16,7 @@ on:
         description: 'Dockerfile to use for building'
         required: false
         default: 'Dockerfile'
-        type: choice
-        options:
-          - 'Dockerfile'
-          - 'Dockerfile.v2'
+        type: string
  
 jobs:
   # Display commit information
