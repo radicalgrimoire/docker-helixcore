@@ -3,9 +3,7 @@ name: build-develop
 run-name: >
   ${{ github.event_name == 'schedule' && 'Scheduled Build' || 'Manual Build' }}
   ${{ inputs.dockerfile || 'Dockerfile' }}  
-    # ${{ github.event_name == 'schedule' && '(Daily 9AM JST)' || '(On-Demand)' }}
   by @${{ github.actor }}
-  ${{ github.sha }}
 
 on:
   schedule:
@@ -44,30 +42,32 @@ jobs:
           COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s" HEAD)
           echo "Auther: ${COMMIT_AUTHOR} / ${COMMIT_MESSAGE}"
 
-  # Run tests.
-  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
-  # if: github.event_name == 'push' || github.event_name == 'pull_request'
-  test:
-    needs: info
-    uses: ./.github/workflows/test.yml
-    with:
-      # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
-      docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
-    secrets: inherit
-
   # Check if today is the designated day to push (Monday) or if manually triggered.
   # Uses external reusable workflow for day checking logic
   check-day:
-    needs: test
+    needs: info
     uses: radicalgrimoire/github-actions-utils/.github/workflows/check-schedule-day.yml@main
     with:
       schedule_type: 'weekly'
       target_value: '1'      # Monday
       timezone: 'Asia/Tokyo'
 
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  # if: github.event_name == 'push' || github.event_name == 'pull_request'
+  test:
+    needs: [info, check-day]
+    uses: ./.github/workflows/test.yml
+    with:
+      # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
+      docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
+      should_push: ${{ needs.check-day.outputs.should-push }}
+    secrets: inherit
+
   # P4Dバージョン取得ステップ
   get-version:
-    needs: check-day
+    needs: [check-day, test]
+    if: needs.check-day.outputs.should-push == 'true'
     uses: ./.github/workflows/get-version.yml
     secrets: inherit
 
@@ -76,7 +76,7 @@ jobs:
   # TAG_SUFFIX="nightly-$(date +'%Y%m%d')"
   push:
     uses: ./.github/workflows/publish.yml
-    needs: [test, check-day, get-version]
+    needs: [check-day, get-version]
     if: needs.check-day.outputs.should-push == 'true'
     with:
       version: ${{ needs.get-version.outputs.version }}
