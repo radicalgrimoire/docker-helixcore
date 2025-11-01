@@ -13,9 +13,9 @@ ARG P4NAME
 ARG P4PORT
 ARG P4USER
 ARG P4PASSWD
+ARG CASE_INSENSITIVE
 ARG P4HOME
 ARG P4ROOT
-ARG CASE_INSENSITIVE
 
 ENV P4NAME=$P4NAME \
     P4PORT=$P4PORT \
@@ -23,24 +23,29 @@ ENV P4NAME=$P4NAME \
     P4PASSWD=$P4PASSWD \
     P4HOME=$P4HOME \
     P4ROOT=$P4ROOT \
-    CASE_INSENSITIVE=$CASE_INSENSITIVE
+    CASE_INSENSITIVE=$CASE_INSENSITIVE \
+    LANG=ja_JP.UTF-8 \
+    LANGUAGE=ja_JP:ja
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
-    && apt-get update \
-    && apt-get install -y gnupg language-pack-ja-base language-pack-ja tzdata curl jq git openssl cron logrotate sudo \
-    && echo 'export LANG=ja_JP.UTF-8' >> ~/.bashrc \
-    && echo 'export LANGUAGE="ja_JP:ja"' >> ~/.bashrc \
+    && apt-get update -y \
+    && apt-get install -y gnupg language-pack-ja-base language-pack-ja tzdata curl jq openssl cron logrotate git \
+    && locale-gen ja_JP.UTF-8 \
     && curl -sS https://package.perforce.com/perforce.pubkey | gpg --dearmor -o /usr/share/keyrings/perforce.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/perforce.gpg] http://package.perforce.com/apt/ubuntu noble release" > /etc/apt/sources.list.d/perforce.list \
-    && apt-get update && apt-get install -y helix-p4d python3 perforce-p4python3 \
-    && chmod +x /usr/local/bin/init.sh \
-    && chmod +x /usr/local/bin/run.sh \
-    && chmod 644 /etc/logrotate.d/p4.* \
+    && apt-get update && apt-get -y install helix-p4d python3 perforce-p4python3 \
+    && P4D_VERSION=$(p4d -V | head -1 | cut -d' ' -f3 | cut -d'/' -f1) \
+    && echo "Installed P4D version: $P4D_VERSION" \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
     && apt-get remove -y git \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
+    && chmod +x /usr/local/bin/init.sh \
+    && chmod +x /usr/local/bin/run.sh \
+    && chmod 644 /etc/logrotate.d/p4.* \
+    && sed -i 's/\r$//' /usr/local/bin/init.sh \
+    && sed -i 's/\r$//' /usr/local/bin/run.sh \
     && bash /usr/local/bin/init.sh
 
 EXPOSE 1666
