@@ -3,7 +3,7 @@ name: build-develop
 run-name: >
   ${{ github.event_name == 'schedule' && 'Scheduled Build' || 'Manual Build' }}
   ${{ inputs.dockerfile || 'Dockerfile' }}  
-  ${{ github.event_name == 'schedule' && '(Daily 9AM JST)' || '(On-Demand)' }}
+    # ${{ github.event_name == 'schedule' && '(Daily 9AM JST)' || '(On-Demand)' }}
   by @${{ github.actor }}
   ${{ github.sha }}
 
