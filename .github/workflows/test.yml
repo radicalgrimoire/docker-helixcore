@@ -1,12 +1,6 @@
 name: test
 
-env:
-  # P4 Configuration - non-sensitive settings
-  P4ROOT: /opt/perforce/servers/master
-  P4NAME: master
-  P4PORT: ssl:1666
-  P4HOME: /opt/perforce/servers
-  CASE_INSENSITIVE: 0
+
 
 on:
   workflow_call:
@@ -28,18 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download secrets.env
+        uses: actions/download-artifact@v4
+        with:
+          name: secrets-env
+          path: build/
+
       - name: Build image
         run: |
-            docker build \
-             -t ${{ secrets.IMAGE_NAME }} \
-             --build-arg P4NAME=${{ env.P4NAME }} \
-             --build-arg P4PORT=${{ env.P4PORT }} \
-             --build-arg P4USER=${{ secrets.P4USER }} \
-             --build-arg P4PASSWD=${{ secrets.P4PASSWD }} \
-             --build-arg P4HOME=${{ env.P4HOME }} \
-             --build-arg P4ROOT=${{ env.P4ROOT }} \
-             --build-arg CASE_INSENSITIVE=${{ env.CASE_INSENSITIVE }} \
-             -f ./build/${{ inputs.docker_files_name }} ./build
+          echo "Building Docker image with ${{ inputs.docker_files_name }}..."
+          bash ./build/docker-build.sh "${{ inputs.docker_files_name }}" ./build
 
       - name: Run tests
         run: |
