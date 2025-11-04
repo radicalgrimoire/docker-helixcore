@@ -19,13 +19,6 @@ on:
         default: 'Dockerfile'
         type: string
 
-env:
-  # P4 Configuration - non-sensitive settings
-  P4ROOT: /opt/perforce/servers/master
-  P4NAME: master
-  P4PORT: ssl:1666
-  P4HOME: /opt/perforce/servers
-  CASE_INSENSITIVE: 0
 
 jobs:
   build-test:
@@ -48,49 +41,44 @@ jobs:
         run: |
           DOCKERFILE_NAME="${{ inputs.dockerfile || 'Dockerfile' }}"
           echo "Building Docker image with $DOCKERFILE_NAME..."
-          docker build \
-           -t helix-p4d-test \
-           --build-arg P4NAME=${{ env.P4NAME }} \
-           --build-arg P4PORT=${{ env.P4PORT }} \
-           --build-arg P4USER=${{ secrets.P4USER }} \
-           --build-arg P4PASSWD=${{ secrets.P4PASSWD }} \
-           --build-arg P4HOME=${{ env.P4HOME }} \
-           --build-arg P4ROOT=${{ env.P4ROOT }} \
-           --build-arg CASE_INSENSITIVE=${{ env.CASE_INSENSITIVE }} \
-           -f ./build/$DOCKERFILE_NAME ./build
+          # secrets.envファイルを作成（デフォルト値付き）
+          echo "P4USER=${{ secrets.P4USER || 'defaultuser' }}" > build/secrets.env
+          echo "P4PASSWD=${{ secrets.P4PASSWD || 'defaultpass' }}" >> build/secrets.env
+          echo "IMAGE_NAME=${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}" >> build/secrets.env
+          bash ./build/docker-build.sh "$DOCKERFILE_NAME" ./build
 
       - name: Test basic functionality
         run: |
           echo "=== Testing basic functionality ==="
           echo "Testing p4d help command..."
-          docker run --rm helix-p4d-test p4d -h || true
+          docker run --rm ${{ secrets.IMAGE_NAME }} p4d -h || true
           
           echo ""
           echo "Getting P4D version..."
-          docker run --rm helix-p4d-test p4d -V || true
+          docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V || true
           
           echo ""
           echo "Checking installed packages..."
-          docker run --rm helix-p4d-test dpkg -l | grep -E "(helix|perforce)" || true
+          docker run --rm ${{ secrets.IMAGE_NAME }} dpkg -l | grep -E "(helix|perforce)" || true
 
       - name: Check image size
         run: |
           echo "=== Docker Image Size Information ==="
-          docker images helix-p4d-test --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+          docker images ${{ secrets.IMAGE_NAME }} --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
           echo ""
           
           # 詳細サイズ情報
-          IMAGE_SIZE=$(docker images helix-p4d-test --format "{{.Size}}")
+          IMAGE_SIZE=$(docker images ${{ secrets.IMAGE_NAME }} --format "{{.Size}}")
           echo "📊 Image Size: $IMAGE_SIZE"
           
           # 圧縮サイズ（実際の転送サイズに近い）
           echo "📦 Calculating compressed size..."
-          docker save helix-p4d-test | gzip | wc -c | awk '{printf "Compressed size: %.2f MB\n", $1/1024/1024}'
+          docker save ${{ secrets.IMAGE_NAME }} | gzip | wc -c | awk '{printf "Compressed size: %.2f MB\n", $1/1024/1024}'
           
           # レイヤー情報
           echo ""
           echo "🔍 Image layers:"
-          docker history helix-p4d-test --format "table {{.Size}}\t{{.CreatedBy}}" | head -10
+          docker history ${{ secrets.IMAGE_NAME }} --format "table {{.Size}}\t{{.CreatedBy}}" | head -10
 
       - name: Test summary
         run: |
@@ -100,7 +88,7 @@ jobs:
           echo "📋 Dockerfile used: ${{ inputs.dockerfile || 'Dockerfile' }}"
           
           # 最終サイズ情報をサマリーに表示
-          IMAGE_SIZE=$(docker images helix-p4d-test --format "{{.Size}}")
+          IMAGE_SIZE=$(docker images ${{ secrets.IMAGE_NAME }} --format "{{.Size}}")
           echo "📊 Final image size: $IMAGE_SIZE"
           
           echo ""

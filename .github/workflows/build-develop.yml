@@ -52,8 +52,27 @@ jobs:
   # Run tests.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
   # if: github.event_name == 'push' || github.event_name == 'pull_request'
-  test:
+  # secrets.envファイルを作成
+  create-secrets:
     needs: [info, check-day]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create secrets.env file
+        run: |
+          # デフォルト値を設定してsecrets.envを作成
+          echo "P4USER=${{ secrets.P4USER || 'defaultuser' }}" > build/secrets.env
+          echo "P4PASSWD=${{ secrets.P4PASSWD || 'defaultpass' }}" >> build/secrets.env
+          echo "IMAGE_NAME=${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}" >> build/secrets.env
+      - name: Upload secrets.env as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: secrets-env
+          path: build/secrets.env
+          retention-days: 1
+
+  test:
+    needs: [info, check-day, create-secrets]
     uses: ./.github/workflows/test.yml
     with:
       # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
