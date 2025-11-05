@@ -131,7 +131,7 @@ jobs:
             const currentDateTime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
             
             // issueのタイトルと本文を作成
-            const title = '🚨 Build Failed: ' + triggerType + ' (' + currentDate + ')';
+            const title = 'Build Failed: ' + triggerType + ' (' + currentDate + ')';
             const failedJobsList = failedJobs.map(job => '- `' + job + '`').join('\n');
             
             // 本文を段階的に作成
