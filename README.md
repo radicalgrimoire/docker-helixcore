@@ -9,7 +9,7 @@ This is a Docker container for Perforce Helix Core (P4D) server prepared by radi
 
 Container images are available in GitHub Container Registry, so feel free to use them if you are interested.
 
-## 🚀 Features
+## Features
 
 - **Ready-to-use Perforce Helix Core server** - Fully configured P4D instance
 - **Japanese locale support** - Pre-configured for Japanese environment
@@ -20,13 +20,13 @@ Container images are available in GitHub Container Registry, so feel free to use
 - **Health checks** - Built-in container health monitoring
 - **Persistent storage** - Data persists across container restarts
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Docker
 - Docker Compose
 - Make (optional, for using Makefile commands)
 
-## 🔧 Quick Start
+## Quick Start
 
 ### Method 1: Using Docker Compose
 
@@ -59,7 +59,7 @@ make rebuild
 make remove
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 docker-helixcore/
@@ -81,7 +81,7 @@ docker-helixcore/
     └── Dockerfile              # Uses GitHub Container Registry image
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 The container supports the following environment variables:
 
@@ -103,7 +103,7 @@ The container uses a custom Docker network with the following settings:
 - **Container IP**: 172.16.238.10
 - **Exposed Port**: 1666 (mapped to host port 1666)
 
-## 🛠️ Container Access
+## Container Access
 
 ### Access the running container
 
@@ -117,7 +117,7 @@ docker exec -it helix-p4d bash
 make shell
 ```
 
-## 🔒 Security Features
+## Security Features
 
 ### SSL Configuration
 - Pre-configured for SSL connections on port 1666
@@ -133,7 +133,7 @@ The container includes `CheckCaseTrigger3.py` which:
 - Includes Helix Authentication Extension for SAML/OIDC integration
 - Ready for enterprise authentication systems
 
-## 📊 Monitoring and Logs
+## Monitoring and Logs
 
 ### Health Checks
 The container includes built-in health checks:
@@ -145,7 +145,7 @@ The container includes built-in health checks:
 - Logs accessible via `docker-compose logs` or `make logs`
 - Server logs located in `/opt/perforce/servers/[P4NAME]/logs/`
 
-## 🔄 Data Persistence
+## Data Persistence
 
 The container uses Docker volumes to persist data:
 
@@ -156,7 +156,7 @@ volumes:
 
 Server data is stored in `/opt/perforce/servers` and persists across container restarts and updates.
 
-## 🏗️ Building from Source
+## Building from Source
 
 ### Build the main image
 
@@ -226,7 +226,7 @@ make shell
 p4dctl status
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -234,11 +234,11 @@ p4dctl status
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 👤 Maintainer
+## Maintainer
 
 **ueno.s** `<ueno.s@gamestudio.co.jp>`
 
-## 🔗 Links
+## Links
 
 - [Perforce Helix Core Documentation](https://www.perforce.com/manuals/p4sag/)
 - [Docker Hub Repository](https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d)

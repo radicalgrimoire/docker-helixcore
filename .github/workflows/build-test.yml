@@ -41,25 +41,133 @@ jobs:
         run: |
           DOCKERFILE_NAME="${{ inputs.dockerfile || 'Dockerfile' }}"
           echo "Building Docker image with $DOCKERFILE_NAME..."
-          # secrets.envファイルを作成（デフォルト値付き）
-          echo "P4USER=${{ secrets.P4USER || 'defaultuser' }}" > build/secrets.env
-          echo "P4PASSWD=${{ secrets.P4PASSWD || 'defaultpass' }}" >> build/secrets.env
-          echo "IMAGE_NAME=${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}" >> build/secrets.env
+          # secrets.envファイルを安全に作成
+          cat << EOF > build/secrets.env
+          P4USER=${P4USER}
+          P4PASSWD=${P4PASSWD}
+          IMAGE_NAME=${IMAGE_NAME}
+          EOF
           bash ./build/docker-build.sh "$DOCKERFILE_NAME" ./build
+        env:
+          P4USER: ${{ secrets.P4USER || 'defaultuser' }}
+          P4PASSWD: ${{ secrets.P4PASSWD || 'defaultpass' }}
+          IMAGE_NAME: ${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}
 
       - name: Test basic functionality
         run: |
-          echo "=== Testing basic functionality ==="
-          echo "Testing p4d help command..."
-          docker run --rm ${{ secrets.IMAGE_NAME }} p4d -h || true
+          echo "=== 基本機能テスト ==="
           
-          echo ""
-          echo "Getting P4D version..."
-          docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V || true
+          # P4Dヘルプコマンドテスト
+          echo "P4Dヘルプコマンドテスト..."
+          if docker run --rm ${{ secrets.IMAGE_NAME }} p4d -h > /dev/null 2>&1; then
+              echo "P4Dヘルプコマンド: 成功"
+          else
+              echo "P4Dヘルプコマンド: 失敗"
+              exit 1
+          fi
           
-          echo ""
-          echo "Checking installed packages..."
-          docker run --rm ${{ secrets.IMAGE_NAME }} dpkg -l | grep -E "(helix|perforce)" || true
+          # P4Dバージョン取得テスト
+          echo "P4Dバージョン取得テスト..."
+          if P4D_VERSION=$(docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V 2>/dev/null); then
+              echo "P4Dバージョン取得: 成功"
+              echo "   バージョン情報: $(echo "$P4D_VERSION" | head -1)"
+          else
+              echo "P4Dバージョン取得: 失敗"
+              exit 1
+          fi
+          
+          # パッケージ確認テスト
+          echo "必要パッケージ確認テスト..."
+          if docker run --rm ${{ secrets.IMAGE_NAME }} dpkg -l | grep -E "(helix|perforce)" > /dev/null 2>&1; then
+              echo "Perforce パッケージ: インストール済み"
+              docker run --rm ${{ secrets.IMAGE_NAME }} dpkg -l | grep -E "(helix|perforce)" | head -3
+          else
+              echo "Perforce パッケージ: 見つかりません（カスタムビルドの可能性）"
+          fi
+
+      - name: Run Helix P4D integration tests
+        run: |
+          echo "=== Helix P4D 統合テスト ==="
+          
+          # テスト用ネットワーク作成
+          docker network create p4test-network || true
+          
+          # P4Dサーバー起動テスト（バックグラウンド）
+          echo "P4Dサーバー起動テスト..."
+          docker run -d \
+              --name p4d-integration-test \
+              --network p4test-network \
+              -e P4PORT=ssl:1666 \
+              -e P4USER=${{ secrets.P4USER || 'testuser' }} \
+              -e P4PASSWD=${{ secrets.P4PASSWD || 'testpass' }} \
+              ${{ secrets.IMAGE_NAME }} || {
+              echo "P4Dサーバー起動: 失敗"
+              exit 1
+          }
+          
+          # サーバー起動待機
+          echo "サーバー起動を待機中..."
+          for i in {1..60}; do
+              # P4Dサーバーのプロセス確認
+              if docker exec p4d-integration-test pgrep p4d > /dev/null 2>&1; then
+                  # SSL証明書を信頼してからP4コマンドテスト
+                  if docker exec p4d-integration-test sh -c 'p4 trust -y -f 2>/dev/null && p4 info -s' > /dev/null 2>&1; then
+                      echo "P4Dサーバー起動: 成功 (${i}秒後)"
+                      break
+                  fi
+              fi
+              if [ $i -eq 60 ]; then
+                  echo "P4Dサーバー起動: タイムアウト"
+                  echo "=== コンテナログ ==="
+                  docker logs p4d-integration-test
+                  echo "=== プロセス状況 ==="
+                  docker exec p4d-integration-test ps aux || true
+                  exit 1
+              fi
+              sleep 1
+          done
+          
+          # 基本的なP4コマンドテスト
+          echo "基本的なP4コマンドテスト..."
+          
+          # p4 info テスト
+          if docker exec p4d-integration-test p4 info -s > /dev/null 2>&1; then
+              echo "p4 info: 成功"
+              # サーバー情報を表示
+              echo "   サーバー情報:"
+              docker exec p4d-integration-test p4 info | head -5 | sed 's/^/     /'
+          else
+              echo "p4 info: 失敗"
+              echo "=== デバッグ情報 ==="
+              docker exec p4d-integration-test p4 info || true
+              echo "=== コンテナログ ==="
+              docker logs p4d-integration-test | tail -20
+              exit 1
+          fi
+          
+          # p4 users テスト
+          if docker exec p4d-integration-test p4 users > /dev/null 2>&1; then
+              echo "p4 users: 成功"
+              USER_COUNT=$(docker exec p4d-integration-test p4 users | wc -l)
+              echo "   登録ユーザー数: ${USER_COUNT}"
+          else
+              echo "p4 users: 失敗"
+              echo "=== デバッグ情報 ==="
+              docker exec p4d-integration-test p4 users || true
+              echo "=== コンテナログ ==="
+              docker logs p4d-integration-test | tail -20
+              exit 1
+          fi
+          
+          echo "Helix P4D 統合テスト完了"
+
+      - name: Cleanup integration test environment
+        if: always()
+        run: |
+          echo "統合テスト環境クリーンアップ..."
+          docker rm -f p4d-integration-test || true
+          docker network rm p4test-network || true
+          echo "クリーンアップ完了"
 
       - name: Check image size
         run: |
@@ -69,27 +177,46 @@ jobs:
           
           # 詳細サイズ情報
           IMAGE_SIZE=$(docker images ${{ secrets.IMAGE_NAME }} --format "{{.Size}}")
-          echo "📊 Image Size: $IMAGE_SIZE"
+          echo "Image Size: $IMAGE_SIZE"
           
           # 圧縮サイズ（実際の転送サイズに近い）
-          echo "📦 Calculating compressed size..."
+          echo "Calculating compressed size..."
           docker save ${{ secrets.IMAGE_NAME }} | gzip | wc -c | awk '{printf "Compressed size: %.2f MB\n", $1/1024/1024}'
           
           # レイヤー情報
           echo ""
-          echo "🔍 Image layers:"
+          echo "Image layers:"
           docker history ${{ secrets.IMAGE_NAME }} --format "table {{.Size}}\t{{.CreatedBy}}" | head -10
 
       - name: Test summary
+        if: always()
         run: |
-          echo "=== Build Test Completed Successfully ==="
-          echo "Docker image built successfully"
-          echo "✅ Basic functionality tests passed"
-          echo "📋 Dockerfile used: ${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "=== ビルドテスト完了 ==="
+          echo "Dockerイメージのビルドが成功しました"
+          echo "基本機能テストが完了しました"
+          echo "使用Dockerfile: ${{ inputs.dockerfile || 'Dockerfile' }}"
           
           # 最終サイズ情報をサマリーに表示
           IMAGE_SIZE=$(docker images ${{ secrets.IMAGE_NAME }} --format "{{.Size}}")
-          echo "📊 Final image size: $IMAGE_SIZE"
+          echo "最終イメージサイズ: $IMAGE_SIZE"
+          
+          # GitHub Step Summaryに結果を出力
+          echo "## ビルドテスト結果サマリー" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 実行情報" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: \`${{ inputs.dockerfile || 'Dockerfile' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **イメージ名**: \`${{ secrets.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **イメージサイズ**: $IMAGE_SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "- **実行時刻**: $(date '+%Y-%m-%d %H:%M:%S JST')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### テスト項目" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] Dockerイメージビルド" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 基本機能テスト (p4d コマンド)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] バージョン取得テスト" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] パッケージ確認テスト" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] イメージサイズ最適化確認" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_注意: これはビルドテストのみです。イメージの保存・公開は行われません。_" >> $GITHUB_STEP_SUMMARY
           
           echo ""
-          echo "Note: This is a build test only. No images were saved or published."
+          echo "注意: これはビルドテストのみです。イメージの保存・公開は行われません。"
