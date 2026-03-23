@@ -23,7 +23,7 @@ jobs:
   info:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: Display build information
@@ -57,7 +57,7 @@ jobs:
     needs: [info, check-day]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Create secrets.env file
         run: |
           # 環境変数経由でファイル作成（ログに表示されない）

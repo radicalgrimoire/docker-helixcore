@@ -1,249 +1,184 @@
-*This README was generated and enhanced by AI.*
+# Docker Helix Core
 
-# Docker Helix Core (Perforce P4D Server)
+Perforce Helix Core (P4D) サーバーを Docker コンテナで実行するためのリポジトリです。  
+現在の標準起動構成は、`p4d/Dockerfile` から既存イメージを参照して `docker-compose.yml` で起動する方式です。
 
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d)
-[![Perforce](https://img.shields.io/badge/Perforce-Helix%20Core-blue?style=for-the-badge)](https://www.perforce.com/products/helix-core)
+## 概要
 
-This is a Docker container for Perforce Helix Core (P4D) server prepared by radicalgrimoire(六魔辞典). The container includes automatic setup, security configurations, and useful triggers for production use.
+- 開発・検証向けの Helix Core コンテナ環境
+- SSL 接続 (`1666`) 前提の構成
+- 起動時ヘルスチェックあり
+- ケース一貫性チェック用トリガー（`CheckCaseTrigger3.py`）を含むイメージを利用
+- データは Docker ボリューム `servers` に永続化
 
-Container images are available in GitHub Container Registry, so feel free to use them if you are interested.
+## 現在の構成
 
-## Features
+主要ファイル:
 
-- **Ready-to-use Perforce Helix Core server** - Fully configured P4D instance
-- **Japanese locale support** - Pre-configured for Japanese environment
-- **Case sensitivity trigger** - Automatic case consistency checking
-- **SSL/Security ready** - Configured with security best practices
-- **Helix Authentication Extension** - Ready for SAML/OIDC integration
-- **Log rotation** - Automated log management
-- **Health checks** - Built-in container health monitoring
-- **Persistent storage** - Data persists across container restarts
+- `docker-compose.yml`: コンテナ起動設定（`helix-p4d`）
+- `Makefile`: 主要操作コマンド（起動/停止/ログ/シェル/ビルド）
+- `p4d/Dockerfile`: `ghcr.io/radicalgrimoire/docker-helixcore/helix-p4d:latest` ベースの実行用イメージ
+- `build/Dockerfile`: ベースイメージを独自に再構築するための定義
+- `build/files/init.sh`: 初期セットアップ（サーバー設定・トリガー設定）
+- `build/files/run.sh`: サーバー起動・ログ出力
 
-## Prerequisites
+ネットワーク/ポート設定（`docker-compose.yml`）:
+
+- カスタムネットワーク: `app_net` (`172.16.238.0/24`)
+- コンテナ IP: `172.16.238.10`
+- 公開ポート: `1666:1666`
+
+## 前提条件
 
 - Docker
 - Docker Compose
-- Make (optional, for using Makefile commands)
+- Make（`Makefile` 利用時）
+- Windows で `make shell` を使う場合は `winpty` が必要
 
-## Quick Start
+## クイックスタート
 
-### Method 1: Using Docker Compose
+### 1. 起動
 
 ```bash
-docker-compose -f docker-compose.yml up -d
+make start
 ```
 
-### Method 2: Using Makefile
+または:
 
 ```bash
-# Start the container
-make start
+docker-compose -f docker-compose.yml -p helixcore up -d
+```
 
-# Stop the container
-make stop
+### 2. ログ確認
 
-# View logs
+```bash
 make logs
+```
 
-# Access container shell
+### 3. シェル接続
+
+```bash
 make shell
+```
 
-# Build from source
-make build
+### 4. 停止
 
-# Rebuild without cache
-make rebuild
+```bash
+make stop
+```
 
-# Remove container and volumes
+### 5. コンテナ削除
+
+```bash
 make remove
 ```
 
-## Project Structure
+## Makefile コマンド
 
-```
-docker-helixcore/
-├── docker-compose.yml          # Docker Compose configuration
-├── Makefile                    # Convenient make commands
-├── README.md                   # This file
-├── build/                      # Build context for creating images
-│   ├── Dockerfile              # Main Dockerfile
-│   ├── Dockerfile.v2           # Alternative Dockerfile with Swarm triggers
-│   └── files/                  # Configuration and script files
-│       ├── init.sh             # Initial setup script
-│       ├── run.sh              # Container startup script
-│       ├── CheckCaseTrigger*.py # Case sensitivity triggers
-│       ├── P4Triggers.py       # Trigger helper library
-│       ├── admin.txt           # Admin group configuration
-│       ├── p4.*                # Logrotate configurations
-│       └── get-keyvault-certificate.sh # Azure Key Vault integration
-└── p4d/                        # Simple Dockerfile using pre-built image
-    └── Dockerfile              # Uses GitHub Container Registry image
-```
+- `make start`: 起動
+- `make stop`: 停止
+- `make remove`: `docker-compose down`
+- `make logs`: ログ追従
+- `make shell`: コンテナ内シェル
+- `make build`: イメージビルド
+- `make rebuild`: キャッシュ無しで再ビルド
 
-## Configuration
+## 環境変数
 
-The container supports the following environment variables:
+このプロジェクトで利用する主な環境変数:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `P4NAME` | Perforce server name | - |
-| `P4PORT` | Perforce server port | `ssl:1666` |
-| `P4USER` | Administrative user | `super` |
-| `P4PASSWD` | Administrative password | - |
-| `P4HOME` | Perforce home directory | `/opt/perforce` |
-| `P4ROOT` | Perforce root directory | - |
-| `CASE_INSENSITIVE` | Case sensitivity setting | `0` (case-sensitive) |
+| 変数名 | 説明 | 代表値 |
+| --- | --- | --- |
+| `P4NAME` | Perforce サーバー名 | 任意 |
+| `P4PORT` | Perforce サーバーポート | `ssl:1666` |
+| `P4USER` | 管理者ユーザー | `super` |
+| `P4PASSWD` | 管理者パスワード | 任意 |
+| `P4HOME` | Perforce ホーム | `/opt/perforce` |
+| `P4ROOT` | Perforce ルート | 例: `/opt/perforce/servers/<server>/root` |
+| `CASE_INSENSITIVE` | 大文字小文字設定 | `0` |
 
-### Network Configuration
+注記:
 
-The container uses a custom Docker network with the following settings:
+- 現在の `docker-compose.yml` では環境変数を明示指定していません。
+- 既定動作は参照元イメージ側の設定に依存します。
+- 値を固定したい場合は `docker-compose.yml` の `services.helixcore.environment` に明示してください。
 
-- **Network**: `app_net` (172.16.238.0/24)
-- **Container IP**: 172.16.238.10
-- **Exposed Port**: 1666 (mapped to host port 1666)
-
-## Container Access
-
-### Access the running container
-
-```bash
-docker exec -it helix-p4d bash
-```
-
-### Using Makefile (Windows compatible)
-
-```bash
-make shell
-```
-
-## Security Features
-
-### SSL Configuration
-- Pre-configured for SSL connections on port 1666
-- Automatic trust establishment between server and clients
-
-### Case Sensitivity Trigger
-The container includes `CheckCaseTrigger3.py` which:
-- Prevents file submissions with inconsistent case usage
-- Maintains depot integrity across case-insensitive file systems
-- Provides clear error messages for case conflicts
-
-### Authentication Extension
-- Includes Helix Authentication Extension for SAML/OIDC integration
-- Ready for enterprise authentication systems
-
-## Monitoring and Logs
-
-### Health Checks
-The container includes built-in health checks:
-- Checks P4D server connectivity every 2 minutes
-- 30-second timeout for health check operations
-
-### Log Management
-- Automatic log rotation configured
-- Logs accessible via `docker-compose logs` or `make logs`
-- Server logs located in `/opt/perforce/servers/[P4NAME]/logs/`
-
-## Data Persistence
-
-The container uses Docker volumes to persist data:
+例:
 
 ```yaml
-volumes:
-  servers:  # Stores all Perforce server data
+services:
+  helixcore:
+    environment:
+      P4NAME: helix
+      P4PORT: ssl:1666
+      P4USER: super
+      P4PASSWD: your-password
 ```
 
-Server data is stored in `/opt/perforce/servers` and persists across container restarts and updates.
+## データ永続化
 
-## Building from Source
+- ボリューム: `servers`
+- マウント先: `/opt/perforce/servers`
 
-### Build the main image
+コンテナを再作成してもボリュームを削除しない限りデータは保持されます。
+
+## 接続方法
+
+P4V / CLI からの接続例:
+
+- サーバー: `ssl:localhost:1666`
+- ユーザー: `super`（または設定したユーザー）
+- パスワード: 設定値
+
+CLI 例:
 
 ```bash
-docker-compose -f docker-compose.yml build
+p4 -p ssl:localhost:1666 -u super login
 ```
 
-### Build with no cache
+## 独自ビルド（必要時）
+
+通常運用では `p4d/Dockerfile` による既存イメージ利用で十分です。  
+独自イメージを作る場合は `build/` を使用します。
 
 ```bash
+make build
 make rebuild
 ```
 
-### Build arguments
-
-The Dockerfile supports various build arguments for customization. See the Dockerfile for complete list of available arguments.
-
-## 🚦 Usage Examples
-
-### Connect with P4V (Perforce Visual Client)
-
-1. Server: `ssl:localhost:1666` (or your server's IP)
-2. Username: `super` (or configured P4USER)
-3. Password: As configured in P4PASSWD
-
-### Command Line Operations
+または:
 
 ```bash
-# Connect to server
-p4 -p ssl:localhost:1666 -u super login
-
-# Create a new workspace
-p4 client my-workspace
-
-# Add files to depot
-p4 add file.txt
-p4 submit -d "Initial commit"
+bash build/docker-build.sh Dockerfile ./build
 ```
 
-## 🐛 Troubleshooting
+## トラブルシューティング
 
-### Common Issues
+### 起動しない
 
-1. **Container won't start**
-   - Check if port 1666 is available
-   - Verify Docker and Docker Compose are installed
-   - Check container logs: `make logs`
+- `1666` ポート使用状況を確認
+- `make logs` でエラー確認
+- `docker ps -a` でコンテナ状態を確認
 
-2. **SSL Connection Issues**
-   - Ensure you're connecting to `ssl:1666` not just `1666`
-   - Trust the server certificate when prompted
+### 接続できない
 
-3. **Permission Issues**
-   - Verify container has proper permissions to write to volumes
-   - Check if SELinux or similar security modules are interfering
+- 接続先が `ssl:localhost:1666` になっているか確認
+- 初回接続時に証明書信頼が必要な場合あり
 
-### Logs and Debugging
+### 状態確認
 
 ```bash
-# View container logs
-make logs
-
-# Access container for debugging
 make shell
-
-# Check Perforce server status inside container
 p4dctl status
 ```
 
-## Contributing
+## 参考リンク
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- [Perforce Helix Core ドキュメント](https://www.perforce.com/manuals/p4sag/)
+- [コンテナイメージ](https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d)
+- [Helix Authentication Extension](https://github.com/perforce/helix-authentication-extension)
 
-## Maintainer
+## 注意事項
 
-**ueno.s** `<ueno.s@gamestudio.co.jp>`
-
-## Links
-
-- [Perforce Helix Core Documentation](https://www.perforce.com/manuals/p4sag/)
-- [Docker Hub Repository](https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d)
-- [Perforce Helix Authentication Extension](https://github.com/perforce/helix-authentication-extension)
-
----
-
-**Note**: This container is designed for development and testing purposes. For production deployments, please review and adjust security settings, networking, and backup strategies according to your organization's requirements.
+この構成は開発・検証用途を想定しています。  
+本番利用時は、認証/権限管理、ネットワーク制限、バックアップ、監視、証明書運用を別途設計してください。
