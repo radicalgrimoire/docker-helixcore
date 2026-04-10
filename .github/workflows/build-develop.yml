@@ -72,7 +72,7 @@ jobs:
           P4PASSWD: ${{ secrets.P4PASSWD || 'defaultpass' }}
           IMAGE_NAME: ${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}
       - name: Upload secrets.env as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: secrets-env
           path: build/secrets.env
@@ -113,7 +113,7 @@ jobs:
     needs: [info, check-day, test, get-version, push]
     steps:
       - name: Create failure issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

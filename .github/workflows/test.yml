@@ -46,7 +46,7 @@ jobs:
             
       - name: Upload Docker image artifact
         if: inputs.should_push == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-image-${{ secrets.IMAGE_NAME }}
           path: ${{ secrets.IMAGE_NAME }}.tar
