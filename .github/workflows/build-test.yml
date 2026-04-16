@@ -7,6 +7,8 @@ run-name: >
 
 on:
   push:
+    branches-ignore:
+      - 'main'
     paths:
       - 'build/**'
       - '.github/workflows/build-test.yml'
