@@ -43,7 +43,7 @@ jobs:
   # Uses external reusable workflow for day checking logic
   check-day:
     needs: info
-    uses: radicalgrimoire/utils/.github/workflows/check-schedule-day.yml@main
+    uses: radicalgrimoire/utils/.github/workflows/check-day.yml@main
     with:
       schedule_type: 'weekly'
       target_value: '1'      # Monday
