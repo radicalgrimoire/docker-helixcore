@@ -43,12 +43,6 @@ jobs:
         run: |
           DOCKERFILE_NAME="${{ inputs.dockerfile || 'Dockerfile' }}"
           echo "Building Docker image with $DOCKERFILE_NAME..."
-          # secrets.envファイルを安全に作成
-          cat << EOF > build/secrets.env
-          P4USER=${P4USER}
-          P4PASSWD=${P4PASSWD}
-          IMAGE_NAME=${IMAGE_NAME}
-          EOF
           bash ./build/docker-build.sh "$DOCKERFILE_NAME" ./build
         env:
           P4USER: ${{ secrets.P4USER || 'defaultuser' }}
@@ -70,11 +64,14 @@ jobs:
           
           # P4Dバージョン取得テスト
           echo "P4Dバージョン取得テスト..."
-          if P4D_VERSION=$(docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V 2>/dev/null); then
+            P4D_VERSION=$(docker run --rm ${{ secrets.IMAGE_NAME }} p4d -V 2>&1 || true)
+            if echo "$P4D_VERSION" | grep -q '^Rev\.'; then
               echo "P4Dバージョン取得: 成功"
               echo "   バージョン情報: $(echo "$P4D_VERSION" | head -1)"
           else
               echo "P4Dバージョン取得: 失敗"
+              echo "=== p4d -V 出力 ==="
+              echo "$P4D_VERSION"
               exit 1
           fi
           
