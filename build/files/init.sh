@@ -47,6 +47,10 @@ popd
 p4 -p $P4PORT group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
+# 新規環境でのみ初回起動時のパスワードローテーションを実行するためのマーカー
+touch "${P4ROOT}/.rotate_super_password_on_first_boot"
+chmod 600 "${P4ROOT}/.rotate_super_password_on_first_boot"
+
 exit
 
 fi

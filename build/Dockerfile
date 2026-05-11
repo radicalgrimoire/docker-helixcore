@@ -4,6 +4,7 @@ LABEL org.opencontainers.image.maintainer="ueno.s <ueno.s@gamestudio.co.jp>"
 # Add external files
 COPY files/run.sh /usr/local/bin/run.sh
 COPY files/init.sh /usr/local/bin/init.sh
+COPY files/generate-password.sh /usr/local/bin/generate-password.sh
 COPY files/p4.* /etc/logrotate.d/
 COPY files/CheckCaseTrigger*.py /usr/local/bin/
 COPY files/P4Triggers.py /usr/local/bin/P4Triggers.py
@@ -35,6 +36,7 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && apt-get update && apt-get install -y helix-p4d python3 perforce-p4python3 \
     && chmod +x /usr/local/bin/init.sh \
     && chmod +x /usr/local/bin/run.sh \
+    && chmod +x /usr/local/bin/generate-password.sh \
     && chmod 644 /etc/logrotate.d/p4.* \
     && git clone https://github.com/perforce/helix-authentication-extension.git /opt/helix-authentication-extension \
     && apt-get remove -y git \
