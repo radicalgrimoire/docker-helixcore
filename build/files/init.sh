@@ -47,6 +47,8 @@ popd
 p4 -p $P4PORT group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
+touch "/opt/perforce/servers/${P4NAME}/.rotate_super_password_on_first_boot"
+
 exit
 
 fi
