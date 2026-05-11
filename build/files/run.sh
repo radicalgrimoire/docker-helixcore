@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-PASSWORD_DIR="/opt/perforce/servers/${P4NAME}/p4password"
+P4ROOT_PARENT="$(dirname "$P4ROOT")"
+PASSWORD_DIR="${P4ROOT_PARENT}/p4password"
 PASSWORD_FILE="${PASSWORD_DIR}/super.password"
 ROTATE_MARKER="${P4ROOT}/.rotate_super_password_on_first_boot"
 LOCK_DIR="${PASSWORD_DIR}/.lock"
