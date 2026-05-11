@@ -16,7 +16,11 @@ on:
 
 jobs:
 
+  generate-password:
+    uses: radicalgrimoire/utils/.github/workflows/generate-password.yml@main
+
   test:
+    needs: generate-password
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +32,7 @@ jobs:
           bash ./build/docker-build.sh "${{ inputs.docker_files_name }}" ./build
         env:
           P4USER: ${{ secrets.P4USER || 'defaultuser' }}
-          P4PASSWD: ${{ secrets.P4PASSWD || 'defaultpass' }}
+          P4PASSWD: ${{ needs.generate-password.outputs.password }}
           IMAGE_NAME: ${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}
 
       - name: Run tests

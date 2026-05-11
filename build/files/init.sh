@@ -47,6 +47,12 @@ popd
 p4 -p $P4PORT group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
+# パスワードをファイル名として記録する（パスワード確認用）
+mkdir -p /opt/perforce/p4password
+touch "/opt/perforce/p4password/${P4PASSWD}"
+chmod 600 "/opt/perforce/p4password/${P4PASSWD}"
+chmod 700 /opt/perforce/p4password
+
 exit
 
 fi

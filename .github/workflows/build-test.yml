@@ -23,7 +23,11 @@ on:
 
 
 jobs:
+  generate-password:
+    uses: radicalgrimoire/utils/.github/workflows/generate-password.yml@main
+
   build-test:
+    needs: generate-password
     runs-on: ubuntu-latest
     
     steps:
@@ -46,7 +50,7 @@ jobs:
           bash ./build/docker-build.sh "$DOCKERFILE_NAME" ./build
         env:
           P4USER: ${{ secrets.P4USER || 'defaultuser' }}
-          P4PASSWD: ${{ secrets.P4PASSWD || 'defaultpass' }}
+          P4PASSWD: ${{ needs.generate-password.outputs.password }}
           IMAGE_NAME: ${{ secrets.IMAGE_NAME || 'helix-p4d-test' }}
 
       - name: Test basic functionality
@@ -98,7 +102,7 @@ jobs:
               --network p4test-network \
               -e P4PORT=ssl:1666 \
               -e P4USER=${{ secrets.P4USER || 'testuser' }} \
-              -e P4PASSWD=${{ secrets.P4PASSWD || 'testpass' }} \
+              -e P4PASSWD=${{ needs.generate-password.outputs.password }} \
               ${{ secrets.IMAGE_NAME }} || {
               echo "P4Dサーバー起動: 失敗"
               exit 1
