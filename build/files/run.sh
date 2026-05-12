@@ -51,7 +51,7 @@ if [ -f "${PASSWORD_FILE}" ]; then
 	if login_with_password "${STORED_PASSWORD}"; then
 		CURRENT_PASSWORD="${STORED_PASSWORD}"
 	else
-		echo "保存済みパスワードでのログインに失敗しました。P4PASSWDで再試行します。"
+		echo "Login with the stored password failed. Retrying with P4PASSWD."
 		if login_with_password "${P4PASSWD}"; then
 			CURRENT_PASSWORD="${P4PASSWD}"
 		fi
@@ -63,12 +63,12 @@ else
 fi
 
 if [ -z "${CURRENT_PASSWORD}" ] && [ -f "${ROTATE_MARKER}" ]; then
-	echo "初回ローテーション対象ですが、現在のsuperパスワードでログインできません。" >&2
+	echo "This instance is marked for first-boot rotation, but login with the current super password failed." >&2
 	exit 1
 fi
 
 if [ -z "${CURRENT_PASSWORD}" ] && [ ! -f "${ROTATE_MARKER}" ]; then
-	echo "既存環境のため、superログインに失敗しても起動は継続します。" >&2
+	echo "This appears to be an existing environment, so startup will continue even though super login failed." >&2
 fi
 
 if [ -n "${CURRENT_PASSWORD}" ]; then
@@ -92,21 +92,21 @@ EOF
 				CURRENT_PASSWORD="${NEW_PASSWORD}"
 				write_p4config "${CURRENT_PASSWORD}"
 				rm -f "${ROTATE_MARKER}"
-				echo "初回ローテーションを実施しました。" >&2
-				echo "新しいsuperパスワードは次のファイルに保存されています: ${PASSWORD_FILE}" >&2
+				echo "First-boot password rotation completed." >&2
+				echo "The new super password has been saved to: ${PASSWORD_FILE}" >&2
 
-				# 変更後パスワードで再ログイン
+				# Log in again with the updated password.
 				if ! login_with_password "${NEW_PASSWORD}"; then
-					echo "ローテーション後のsuperユーザーログインに失敗しました。" >&2
+					echo "Login for the super user failed after password rotation." >&2
 					exit 1
 				fi
 			else
-				echo "superユーザーのパスワード変更に失敗しました。" >&2
+				echo "Failed to change the super user password." >&2
 				exit 1
 			fi
 		fi
 	else
-		echo "superユーザーのパスワードローテーションは他のプロセスが実行中のため待機せず継続します。" >&2
+		echo "Another process is already rotating the super user password, so startup will continue without waiting." >&2
 	fi
 fi
 
