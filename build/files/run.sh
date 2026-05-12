@@ -71,6 +71,12 @@ EOF
 			then
 				( umask 077; printf '%s\n' "${NEW_PASSWORD}" > "${PASSWORD_FILE}" )
 				chmod 600 "${PASSWORD_FILE}"
+				run_p4_as_perforce p4 set "P4PASSWD=${NEW_PASSWORD}"
+				cat > /opt/perforce/servers/.p4config <<EOF
+P4USER=${P4USER}
+P4PORT=${P4PORT}
+P4PASSWD=${NEW_PASSWORD}
+EOF
 				rm -f "${ROTATE_MARKER}"
 				echo "初回ローテーションを実施しました。" >&2
 				echo "新しいsuperパスワードは次のファイルに保存されています: ${PASSWORD_FILE}" >&2
