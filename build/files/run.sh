@@ -76,7 +76,10 @@ EOF
 				echo "新しいsuperパスワードは次のファイルに保存されています: ${PASSWORD_FILE}" >&2
 
 				# 変更後パスワードで再ログイン
-				login_with_password "${NEW_PASSWORD}"
+				if ! login_with_password "${NEW_PASSWORD}"; then
+					echo "ローテーション後のsuperユーザーログインに失敗しました。" >&2
+					exit 1
+				fi
 			else
 				echo "superユーザーのパスワード変更に失敗しました。" >&2
 				exit 1

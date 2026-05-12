@@ -12,14 +12,14 @@ run_p4_as_perforce p4 trust -y -f
 
 p4config_file="${P4HOME}/.p4config"
 
-cat > ${p4config_file} <<EOF
+cat > "${p4config_file}" <<EOF
 P4USER=$P4USER
 P4PORT=$P4PORT
 P4PASSWD=$P4PASSWD
 EOF
 
-chmod 0600 ${p4config_file}
-chown perforce:perforce ${p4config_file}
+chmod 0600 "${p4config_file}"
+chown perforce:perforce "${p4config_file}"
 
 run_p4_as_perforce p4 login <<EOF
 $P4PASSWD
