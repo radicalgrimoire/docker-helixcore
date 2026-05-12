@@ -15,6 +15,19 @@ run_p4_as_perforce() {
 	sudo -H -E -u perforce "$@"
 }
 
+write_p4config() {
+	local password="$1"
+	[ -n "$password" ] || return 1
+
+	cat > "${P4CONFIG}" <<EOF
+P4USER=${P4USER}
+P4PORT=${P4PORT}
+P4PASSWD=${password}
+EOF
+	chown perforce:perforce "${P4CONFIG}" || true
+	chmod 600 "${P4CONFIG}" || true
+}
+
 p4dctl start -t p4d "${P4NAME}"
 sudo service cron start
 run_p4_as_perforce p4 trust -y -f
@@ -58,6 +71,10 @@ if [ -z "${CURRENT_PASSWORD}" ] && [ ! -f "${ROTATE_MARKER}" ]; then
 	echo "既存環境のため、superログインに失敗しても起動は継続します。" >&2
 fi
 
+if [ -n "${CURRENT_PASSWORD}" ]; then
+	write_p4config "${CURRENT_PASSWORD}"
+fi
+
 if [ -f "${ROTATE_MARKER}" ]; then
 	exec 9>"${LOCK_FILE}"
 	if flock -n 9; then
@@ -72,11 +89,8 @@ EOF
 			then
 				( umask 077; printf '%s\n' "${NEW_PASSWORD}" > "${PASSWORD_FILE}" )
 				chmod 600 "${PASSWORD_FILE}"
-				cat > "${P4CONFIG}" <<EOF
-P4USER=${P4USER}
-P4PORT=${P4PORT}
-P4PASSWD=${NEW_PASSWORD}
-EOF
+				CURRENT_PASSWORD="${NEW_PASSWORD}"
+				write_p4config "${CURRENT_PASSWORD}"
 				rm -f "${ROTATE_MARKER}"
 				echo "初回ローテーションを実施しました。" >&2
 				echo "新しいsuperパスワードは次のファイルに保存されています: ${PASSWORD_FILE}" >&2
@@ -104,11 +118,6 @@ fi
 if [ -f /opt/perforce/.p4tickets ]; then
 	chown perforce:perforce /opt/perforce/.p4tickets || true
 	chmod 600 /opt/perforce/.p4tickets || true
-fi
-
-if [ -f "${P4CONFIG}" ]; then
-	chown perforce:perforce "${P4CONFIG}" || true
-	chmod 600 "${P4CONFIG}" || true
 fi
 
 exec /usr/bin/tail --pid="$(cat "/var/run/p4d.${P4NAME}.pid")" -F "${P4ROOT}/logs/log"
