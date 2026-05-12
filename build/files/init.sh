@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 if ! p4dctl list 2>/dev/null | grep -Fqx -- "$P4NAME"; then
 
@@ -6,8 +7,8 @@ run_p4_as_perforce() {
 	sudo -H -E -u perforce "$@"
 }
 
-/opt/perforce/sbin/configure-helix-p4d.sh $P4NAME -n -p $P4PORT -r $P4ROOT -u $P4USER -P $P4PASSWD --case $CASE_INSENSITIVE --unicode
-echo bash /opt/perforce/sbin/configure-helix-p4d.sh $P4NAME -n -p $P4PORT -r $P4ROOT -u $P4USER -P $P4PASSWD --case $CASE_INSENSITIVE --unicode
+/opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "${P4PASSWD}" --case "${CASE_INSENSITIVE}" --unicode
+echo bash /opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "${P4PASSWD}" --case "${CASE_INSENSITIVE}" --unicode
 run_p4_as_perforce p4 trust -y -f
 
 p4config_file="${P4HOME}/.p4config"
@@ -46,7 +47,7 @@ if [ -f /opt/perforce/.p4tickets ]; then
 	chmod 600 /opt/perforce/.p4tickets || true
 fi
 
-run_p4_as_perforce p4 -p $P4PORT group -i < /opt/perforce/admin.txt
+run_p4_as_perforce p4 -p "${P4PORT}" group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
 # 新規環境でのみ初回起動時のパスワードローテーションを実行するためのマーカー

@@ -14,7 +14,7 @@ run_p4_as_perforce() {
 	sudo -H -E -u perforce "$@"
 }
 
-p4dctl start -t p4d $P4NAME
+p4dctl start -t p4d "${P4NAME}"
 sudo service cron start
 run_p4_as_perforce p4 trust -y -f
 
@@ -100,4 +100,4 @@ if [ -f /opt/perforce/.p4tickets ]; then
 	chmod 600 /opt/perforce/.p4tickets || true
 fi
 
-exec /usr/bin/tail --pid=$(cat /var/run/p4d.$P4NAME.pid) -F "$P4ROOT/logs/log"
+exec /usr/bin/tail --pid="$(cat "/var/run/p4d.${P4NAME}.pid")" -F "${P4ROOT}/logs/log"

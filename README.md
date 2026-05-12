@@ -144,7 +144,7 @@ services:
 デフォルト構成（`P4ROOT=/opt/perforce/servers/<P4NAME>/root`）では:
 
 ```text
-/opt/perforce/servers/p4password/super.password
+/opt/perforce/servers/<P4NAME>/p4password/super.password
 ```
 
 `P4ROOT` の値が異なる場合はパスが変わります。
@@ -161,12 +161,15 @@ docker exec <コンテナ名> cat "$(dirname "$P4ROOT")/p4password/super.passwor
 
 ### 無効化方法
 
-自動ローテーションを行いたくない場合は、初期化完了後にマーカーファイルを削除してからコンテナを起動してください。
+自動ローテーションを行いたくない場合は、初回起動前にボリューム側でマーカーファイルを削除してください。
 
 ```bash
-# 実行中コンテナで P4ROOT 配下のマーカーを削除する例
-docker exec <コンテナ名> sh -c 'rm -f "${P4ROOT}/.rotate_super_password_on_first_boot"'
+# 初回起動前にボリューム側でマーカーを削除する例
+docker run --rm -v servers:/opt/perforce/servers busybox \
+  rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
 ```
+
+`P4ROOT` を変更している場合は、上記パスを `${P4ROOT}/.rotate_super_password_on_first_boot` に読み替えてください。
 
 ### 既存環境への影響
 
