@@ -151,10 +151,10 @@ services:
 
 ### 確認方法
 
-コンテナ内で以下を実行することでパスワードを確認できます。
+コンテナ内で `P4ROOT` を展開してパスワードを確認するには、以下を実行してください。
 
 ```bash
-docker exec <コンテナ名> cat "$(dirname "$P4ROOT")/p4password/super.password"
+docker exec <コンテナ名> sh -lc 'cat "$(dirname "$P4ROOT")/p4password/super.password"'
 ```
 
 `P4ROOT` が不明な場合は `make shell` でコンテナに入ってから確認してください。
@@ -169,7 +169,7 @@ docker run --rm -v servers:/opt/perforce/servers busybox \
   rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
 ```
 
-`P4ROOT` を変更している場合は、上記パスを `${P4ROOT}/.rotate_super_password_on_first_boot` に読み替えてください。
+`P4ROOT` を変更している場合は、上記パスをコンテナ内の環境変数 `P4ROOT` の値（例: `<P4ROOT>/.rotate_super_password_on_first_boot`）に読み替えてください。
 
 ### 既存環境への影響
 

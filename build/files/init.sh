@@ -8,7 +8,7 @@ run_p4_as_perforce() {
 }
 
 /opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "${P4PASSWD}" --case "${CASE_INSENSITIVE}" --unicode
-echo bash /opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "${P4PASSWD}" --case "${CASE_INSENSITIVE}" --unicode
+echo bash /opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "****" --case "${CASE_INSENSITIVE}" --unicode
 run_p4_as_perforce p4 trust -y -f
 
 p4config_file="${P4HOME}/.p4config"
