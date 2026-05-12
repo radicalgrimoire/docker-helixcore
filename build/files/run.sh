@@ -10,22 +10,24 @@ LOCK_FILE="${PASSWORD_DIR}/.rotate_super_password.lock"
 mkdir -p "${PASSWORD_DIR}"
 chmod 700 "${PASSWORD_DIR}"
 
+run_p4_as_perforce() {
+	sudo -H -E -u perforce "$@"
+}
+
 p4dctl start -t p4d $P4NAME
 sudo service cron start
-p4 trust -y -f
+run_p4_as_perforce p4 trust -y -f
 
 login_with_password() {
 	local password="$1"
 	[ -n "$password" ] || return 1
 
-	p4 logout > /dev/null 2>&1 || true
-	sudo -E -u perforce p4 logout > /dev/null 2>&1 || true
+	run_p4_as_perforce p4 logout > /dev/null 2>&1 || true
 
-	if ! printf '%s\n' "$password" | p4 login > /dev/null 2>&1; then
+	if ! printf '%s\n' "$password" | run_p4_as_perforce p4 login > /dev/null 2>&1; then
 		return 1
 	fi
 
-	printf '%s\n' "$password" | sudo -E -u perforce p4 login > /dev/null 2>&1 || true
 	return 0
 }
 
@@ -61,7 +63,7 @@ if [ -f "${ROTATE_MARKER}" ]; then
 		if [ -f "${ROTATE_MARKER}" ]; then
 			NEW_PASSWORD="$(/usr/local/bin/generate-password.sh 16)"
 
-			if p4 passwd <<EOF
+			if run_p4_as_perforce p4 passwd <<EOF
 ${CURRENT_PASSWORD}
 ${NEW_PASSWORD}
 ${NEW_PASSWORD}
@@ -85,8 +87,14 @@ EOF
 	fi
 fi
 
-cp /root/.p4trust /opt/perforce/.p4trust
-cp /root/.p4tickets /opt/perforce/.p4tickets
-chown perforce:perforce /opt/perforce/.p4trust /opt/perforce/.p4tickets || true
-chmod 600 /opt/perforce/.p4trust /opt/perforce/.p4tickets || true
+if [ -f /opt/perforce/.p4trust ]; then
+	chown perforce:perforce /opt/perforce/.p4trust || true
+	chmod 600 /opt/perforce/.p4trust || true
+fi
+
+if [ -f /opt/perforce/.p4tickets ]; then
+	chown perforce:perforce /opt/perforce/.p4tickets || true
+	chmod 600 /opt/perforce/.p4tickets || true
+fi
+
 exec /usr/bin/tail --pid=$(cat /var/run/p4d.$P4NAME.pid) -F "$P4ROOT/logs/log"

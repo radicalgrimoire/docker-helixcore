@@ -2,49 +2,51 @@
 
 if ! p4dctl list 2>/dev/null | grep -q $P4NAME; then
 
+run_p4_as_perforce() {
+	sudo -H -E -u perforce "$@"
+}
+
 /opt/perforce/sbin/configure-helix-p4d.sh $P4NAME -n -p $P4PORT -r $P4ROOT -u $P4USER -P $P4PASSWD --case $CASE_INSENSITIVE --unicode
 echo bash /opt/perforce/sbin/configure-helix-p4d.sh $P4NAME -n -p $P4PORT -r $P4ROOT -u $P4USER -P $P4PASSWD --case $CASE_INSENSITIVE --unicode
-p4 trust -y -f
+run_p4_as_perforce p4 trust -y -f
 
-p4 configure set server.extensions.allow.unsigned=1
-p4 configure set net.keepalive.idle=10
-p4 configure set net.keepalive.interval=30
-p4 configure set net.keepalive.count=3
+p4config_file="${P4HOME}/.p4config"
 
-cat > ~perforce/.p4config <<EOF
+cat > ${p4config_file} <<EOF
 P4USER=$P4USER
 P4PORT=$P4PORT
 P4PASSWD=$P4PASSWD
 EOF
 
-chmod 0600 ~perforce/.p4config
-chown perforce:perforce ~perforce/.p4config
+chmod 0600 ${p4config_file}
+chown perforce:perforce ${p4config_file}
 
-p4 login <<EOF
+run_p4_as_perforce p4 login <<EOF
 $P4PASSWD
 EOF
 
-su - perforce
+run_p4_as_perforce p4 configure set server.extensions.allow.unsigned=1
+run_p4_as_perforce p4 configure set net.keepalive.idle=10
+run_p4_as_perforce p4 configure set net.keepalive.interval=30
+run_p4_as_perforce p4 configure set net.keepalive.count=3
 
-yes ${P4PASSWD} | p4 -p ${P4PORT} -u super login
+TRIGGERS_FILE="$(mktemp)"
+run_p4_as_perforce p4 triggers -o > "${TRIGGERS_FILE}"
+echo '   CheckCaseTrigger change-submit //... "python3 /usr/local/bin/CheckCaseTrigger3.py %changelist% port=ssl:1666 user=super"' >> "${TRIGGERS_FILE}"
+run_p4_as_perforce p4 triggers -i < "${TRIGGERS_FILE}"
+rm -f "${TRIGGERS_FILE}"
 
-pushd /usr/local/bin/
-p4 triggers -o > triggers.txt
-echo '   CheckCaseTrigger change-submit //... "python3 /usr/local/bin/CheckCaseTrigger3.py %changelist% port=ssl:1666 user=super"' >> triggers.txt
-p4 triggers -i < triggers.txt
-popd
+if [ -f /opt/perforce/.p4trust ]; then
+	chown perforce:perforce /opt/perforce/.p4trust || true
+	chmod 600 /opt/perforce/.p4trust || true
+fi
 
-cp /root/.p4trust /opt/perforce/.p4trust
-cp /root/.p4tickets /opt/perforce/.p4tickets
+if [ -f /opt/perforce/.p4tickets ]; then
+	chown perforce:perforce /opt/perforce/.p4tickets || true
+	chmod 600 /opt/perforce/.p4tickets || true
+fi
 
-chown perforce:perforce /opt/perforce/.p4trust
-chown perforce:perforce /opt/perforce/.p4tickets
-
-pushd /opt/perforce
-p4 trust -y -f
-popd
-
-p4 -p $P4PORT group -i < /opt/perforce/admin.txt
+run_p4_as_perforce p4 -p $P4PORT group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
 # 新規環境でのみ初回起動時のパスワードローテーションを実行するためのマーカー
