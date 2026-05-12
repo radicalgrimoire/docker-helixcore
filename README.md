@@ -122,6 +122,60 @@ services:
 
 コンテナを再作成してもボリュームを削除しない限りデータは保持されます。
 
+## 初回起動時の super パスワードローテーション
+
+新規ボリュームで初めてコンテナを起動した際、`super` ユーザーのパスワードが自動的にローテーションされます。
+
+### 実施条件
+
+以下の条件を両方満たす場合にのみ実行されます。
+
+- 新規ボリューム（既存ボリュームでは実行しない）
+- 初回起動であること（ローテーション成功後はマーカーを削除し、2 回目以降は実行しない）
+
+### 保存先
+
+ローテーション後の `super` パスワードは以下のファイルに保存されます。
+
+```text
+<P4ROOT の親ディレクトリ>/p4password/super.password
+```
+
+デフォルト構成（`P4ROOT=/opt/perforce/servers/<P4NAME>/root`）では:
+
+```text
+/opt/perforce/servers/<P4NAME>/p4password/super.password
+```
+
+`P4ROOT` の値が異なる場合はパスが変わります。
+
+### 確認方法
+
+コンテナ内で `P4ROOT` を展開してパスワードを確認するには、以下を実行してください。
+
+```bash
+docker exec <コンテナ名> sh -lc 'cat "$(dirname "$P4ROOT")/p4password/super.password"'
+```
+
+`P4ROOT` が不明な場合は `make shell` でコンテナに入ってから確認してください。
+
+### 無効化方法
+
+自動ローテーションを行いたくない場合は、初回起動前にボリューム側でマーカーファイルを削除してください。
+
+```bash
+# 初回起動前にボリューム側でマーカーを削除する例
+docker run --rm -v servers:/opt/perforce/servers busybox \
+  rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
+```
+
+`P4ROOT` を変更している場合は、上記パスをコンテナ内の環境変数 `P4ROOT` の値（例: `<P4ROOT>/.rotate_super_password_on_first_boot`）に読み替えてください。
+
+### 既存環境への影響
+
+既存ボリュームにはマーカーファイルが存在しないため、自動ローテーションは実行されません。  
+既存の `P4PASSWD` 設定値は引き続き有効です。
+
 ## 接続方法
 
 P4V / CLI からの接続例:
