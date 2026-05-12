@@ -50,7 +50,7 @@ fi
 run_p4_as_perforce p4 -p "${P4PORT}" group -i < /opt/perforce/admin.txt
 rm -f /opt/perforce/admin.txt
 
-# 新規環境でのみ初回起動時のパスワードローテーションを実行するためのマーカー
+# Marker used to trigger first-boot password rotation only for new environments.
 touch "${P4ROOT}/.rotate_super_password_on_first_boot"
 chmod 600 "${P4ROOT}/.rotate_super_password_on_first_boot"
 

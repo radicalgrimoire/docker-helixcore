@@ -1,6 +1,6 @@
 #!/bin/bash
-# docker-build.sh: .envファイルから環境変数を読み込み、--build-argとしてdocker buildに渡す
-# 使い方: ./docker-build.sh [Dockerfile名] [ビルドパス]
+# docker-build.sh: Load environment variables from .env and pass them to docker build as --build-arg values.
+# Usage: ./docker-build.sh [Dockerfile name] [build path]
 set -e
 
 DOCKERFILE_NAME="${1:-Dockerfile}"
@@ -9,14 +9,14 @@ IMAGE_NAME="${IMAGE_NAME:-helix-p4d-test}"
 
 echo "Building Docker image with $DOCKERFILE_NAME..."
 
-# .envファイルと環境変数の読み込みで--build-arg生成
+# Build the --build-arg list from .env and environment variables.
 BUILD_ARGS=""
 
-# 通常の.envファイルを読み込み
+# Load the standard .env file.
 ENV_PATH="$BUILD_PATH/.env"
 if [ -f "$ENV_PATH" ]; then
     while IFS='=' read -r key value; do
-        # コメント・空行・export除外
+        # Skip comments, blank lines, and the export prefix.
         if [[ "$key" =~ ^# ]] || [[ -z "$key" ]]; then continue; fi
         key=$(echo "$key" | sed 's/^export //')
         value=$(echo "$value" | sed 's/^\s*//;s/\s*$//')
@@ -24,7 +24,7 @@ if [ -f "$ENV_PATH" ]; then
     done < "$ENV_PATH"
 fi
 
-# CIなどで渡された環境変数をbuild-argへ反映（値はログ出力しない）
+# Include environment variables provided by CI or other callers as build args without logging their values.
 for key in P4NAME P4PORT P4USER P4PASSWD P4HOME P4ROOT CASE_INSENSITIVE; do
     value="${!key}"
     if [ -n "$value" ]; then

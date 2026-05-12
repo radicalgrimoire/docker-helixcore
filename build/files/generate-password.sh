@@ -19,8 +19,8 @@ PASSWORD=""
 ATTEMPT=1
 
 while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
-  # dd で固定バイト数だけ読み出してから tr でフィルタすることで
-  # 無限ストリームへの head 適用による SIGPIPE を回避する。
+  # Read a fixed number of bytes with dd and then filter with tr
+  # to avoid SIGPIPE caused by applying head to an infinite stream.
   CANDIDATE="$(dd if=/dev/urandom bs=$(( LENGTH * 8 )) count=1 2>/dev/null | LC_ALL=C tr -dc "$ALLOWED_CHARS")"
 
   if [ "${#CANDIDATE}" -ge "$LENGTH" ]; then
