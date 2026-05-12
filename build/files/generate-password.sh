@@ -19,8 +19,9 @@ PASSWORD=""
 ATTEMPT=1
 
 while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
-  # head を使わずに一度変数へ受けてから切り出し、pipefail と SIGPIPE の偶発失敗を避ける。
-  CANDIDATE="$(openssl rand -base64 "$(( LENGTH * 4 ))" | tr -dc "$ALLOWED_CHARS")"
+  # dd で固定バイト数だけ読み出してから tr でフィルタすることで
+  # 無限ストリームへの head 適用による SIGPIPE を回避する。
+  CANDIDATE="$(dd if=/dev/urandom bs=$(( LENGTH * 8 )) count=1 2>/dev/null | LC_ALL=C tr -dc "$ALLOWED_CHARS")"
 
   if [ "${#CANDIDATE}" -ge "$LENGTH" ]; then
     PASSWORD="${CANDIDATE:0:LENGTH}"

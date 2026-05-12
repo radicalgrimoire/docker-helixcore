@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if ! p4dctl list 2>/dev/null | grep -q $P4NAME; then
+if ! p4dctl list 2>/dev/null | grep -Fqx -- "$P4NAME"; then
 
 run_p4_as_perforce() {
 	sudo -H -E -u perforce "$@"

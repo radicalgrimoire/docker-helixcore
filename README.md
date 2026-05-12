@@ -141,30 +141,31 @@ services:
 <P4ROOT の親ディレクトリ>/p4password/super.password
 ```
 
-`docker-compose.yml` のデフォルト構成では:
+デフォルト構成（`P4ROOT=/opt/perforce/servers/<P4NAME>/root`）では:
 
 ```text
 /opt/perforce/servers/p4password/super.password
 ```
+
+`P4ROOT` の値が異なる場合はパスが変わります。
 
 ### 確認方法
 
 コンテナ内で以下を実行することでパスワードを確認できます。
 
 ```bash
-docker exec <コンテナ名> cat /opt/perforce/servers/p4password/super.password
+docker exec <コンテナ名> cat "$(dirname "$P4ROOT")/p4password/super.password"
 ```
 
-または `make shell` でコンテナに入ってから確認してください。
+`P4ROOT` が不明な場合は `make shell` でコンテナに入ってから確認してください。
 
 ### 無効化方法
 
 自動ローテーションを行いたくない場合は、初期化完了後にマーカーファイルを削除してからコンテナを起動してください。
 
 ```bash
-# ボリューム上のマーカーを削除する例
-docker run --rm -v servers:/opt/perforce/servers busybox \
-  rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
+# 実行中コンテナで P4ROOT 配下のマーカーを削除する例
+docker exec <コンテナ名> sh -c 'rm -f "${P4ROOT}/.rotate_super_password_on_first_boot"'
 ```
 
 ### 既存環境への影響
