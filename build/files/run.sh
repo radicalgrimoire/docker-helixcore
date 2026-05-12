@@ -71,6 +71,7 @@ EOF
 			then
 				( umask 077; printf '%s\n' "${NEW_PASSWORD}" > "${PASSWORD_FILE}" )
 				chmod 600 "${PASSWORD_FILE}"
+				export "P4PASSWD=${NEW_PASSWORD}"
 				run_p4_as_perforce p4 set "P4PASSWD=${NEW_PASSWORD}"
 				p4 set "P4PASSWD=${NEW_PASSWORD}"
 				cat > /opt/perforce/servers/.p4config <<EOF
