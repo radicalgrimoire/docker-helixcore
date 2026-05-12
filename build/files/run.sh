@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+: "${P4CONFIG:?P4CONFIG is not set}"
 P4ROOT_PARENT="$(dirname "$P4ROOT")"
 PASSWORD_DIR="${P4ROOT_PARENT}/p4password"
 PASSWORD_FILE="${PASSWORD_DIR}/super.password"
@@ -71,8 +72,7 @@ EOF
 			then
 				( umask 077; printf '%s\n' "${NEW_PASSWORD}" > "${PASSWORD_FILE}" )
 				chmod 600 "${PASSWORD_FILE}"
-				export "P4PASSWD=${NEW_PASSWORD}"
-				cat > /opt/perforce/servers/.p4config <<EOF
+				cat > "${P4CONFIG}" <<EOF
 P4USER=${P4USER}
 P4PORT=${P4PORT}
 P4PASSWD=${NEW_PASSWORD}
@@ -104,6 +104,11 @@ fi
 if [ -f /opt/perforce/.p4tickets ]; then
 	chown perforce:perforce /opt/perforce/.p4tickets || true
 	chmod 600 /opt/perforce/.p4tickets || true
+fi
+
+if [ -f "${P4CONFIG}" ]; then
+	chown perforce:perforce "${P4CONFIG}" || true
+	chmod 600 "${P4CONFIG}" || true
 fi
 
 exec /usr/bin/tail --pid="$(cat "/var/run/p4d.${P4NAME}.pid")" -F "${P4ROOT}/logs/log"

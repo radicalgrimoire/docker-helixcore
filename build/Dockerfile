@@ -24,7 +24,8 @@ ENV P4NAME=$P4NAME \
     P4PASSWD=$P4PASSWD \
     P4HOME=$P4HOME \
     P4ROOT=$P4ROOT \
-    CASE_INSENSITIVE=$CASE_INSENSITIVE
+    CASE_INSENSITIVE=$CASE_INSENSITIVE \
+    P4CONFIG=/opt/perforce/.p4config
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && apt-get update \

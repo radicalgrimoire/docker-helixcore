@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+: "${P4CONFIG:?P4CONFIG is not set}"
+
 if ! p4dctl list 2>/dev/null | grep -Fqx -- "$P4NAME"; then
 
 run_p4_as_perforce() {
@@ -11,16 +13,14 @@ run_p4_as_perforce() {
 echo bash /opt/perforce/sbin/configure-helix-p4d.sh "${P4NAME}" -n -p "${P4PORT}" -r "${P4ROOT}" -u "${P4USER}" -P "****" --case "${CASE_INSENSITIVE}" --unicode
 run_p4_as_perforce p4 trust -y -f
 
-p4config_file="${P4HOME}/.p4config"
-
-cat > "${p4config_file}" <<EOF
+cat > "${P4CONFIG}" <<EOF
 P4USER=$P4USER
 P4PORT=$P4PORT
 P4PASSWD=$P4PASSWD
 EOF
 
-chmod 0600 "${p4config_file}"
-chown perforce:perforce "${p4config_file}"
+chmod 0600 "${P4CONFIG}"
+chown perforce:perforce "${P4CONFIG}"
 
 run_p4_as_perforce p4 login <<EOF
 $P4PASSWD
