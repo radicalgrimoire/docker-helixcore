@@ -7,7 +7,7 @@ run-name: >
 
 on:
   schedule:
-    # JST 朝9時 = UTC 0時（JST = UTC + 9時間）
+    # 9:00 JST = 0:00 UTC (JST = UTC + 9 hours)
     - cron: '0 0 * * *'
   
   workflow_dispatch:
@@ -53,12 +53,12 @@ jobs:
     needs: [info, check-day]
     uses: ./.github/workflows/test.yml
     with:
-      # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
+      # Use the selected Dockerfile for manual runs, default for scheduled runs
       docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
       should_push: ${{ needs.check-day.outputs.should-push }}
     secrets: inherit
 
-  # P4Dバージョン取得ステップ
+  # Get P4D version step
   get-version:
     needs: [check-day, test]
     if: needs.check-day.outputs.should-push == 'true'
@@ -91,39 +91,39 @@ jobs:
             const failedJobs = [];
             const needs = ${{ toJSON(needs) }};
             
-            // 失敗したジョブを特定
+            // Identify failed jobs
             if (needs.test?.result === 'failure') failedJobs.push('test');
             if (needs['get-version']?.result === 'failure') failedJobs.push('get-version');  
             if (needs.push?.result === 'failure') failedJobs.push('push');
             
-            const triggerType = '${{ github.event_name }}' === 'schedule' ? 'スケジュール実行' : '手動実行';
+            const triggerType = '${{ github.event_name }}' === 'schedule' ? 'Scheduled run' : 'Manual run';
             const dockerfile = '${{ inputs.dockerfile || 'Dockerfile' }}';
             const currentDate = new Date().toLocaleDateString('ja-JP');
             const currentDateTime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
             
-            // issueのタイトルと本文を作成
+            // Build issue title and body
             const title = 'Build Failed: ' + triggerType + ' (' + currentDate + ')';
             const failedJobsList = failedJobs.map(job => '- `' + job + '`').join('\n');
             
-            // 本文を段階的に作成
-            let body = '## ビルド失敗レポート\n\n';
-            body += '**実行情報:**\n';
-            body += '- トリガー: ' + triggerType + '\n';
+            // Build body content step by step
+            let body = '## Build Failure Report\n\n';
+            body += '**Execution Info:**\n';
+            body += '- Trigger: ' + triggerType + '\n';
             body += '- Dockerfile: `' + dockerfile + '`\n';
-            body += '- ブランチ: `${{ github.ref_name }}`\n';
-            body += '- コミット: `${{ github.sha }}`\n';
-            body += '- 実行者: @${{ github.actor }}\n';
-            body += '- 実行時刻: ' + currentDateTime + ' JST\n\n';
-            body += '**失敗したジョブ:**\n';
+            body += '- Branch: `${{ github.ref_name }}`\n';
+            body += '- Commit: `${{ github.sha }}`\n';
+            body += '- Actor: @${{ github.actor }}\n';
+            body += '- Timestamp: ' + currentDateTime + ' JST\n\n';
+            body += '**Failed Jobs:**\n';
             body += failedJobsList + '\n\n';
-            body += '**ワークフロー実行:**\n';
+            body += '**Workflow Run:**\n';
             body += '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n';
-            body += '**対応が必要な項目:**\n';
-            body += '- [ ] エラーログの確認\n';
-            body += '- [ ] 失敗原因の特定\n';
-            body += '- [ ] 修正作業\n';
-            body += '- [ ] 動作確認\n\n';
-            body += '_このissueは自動的に作成されました。修正完了後はcloseしてください。_';
+            body += '**Required Actions:**\n';
+            body += '- [ ] Review error logs\n';
+            body += '- [ ] Identify the root cause\n';
+            body += '- [ ] Apply a fix\n';
+            body += '- [ ] Verify behavior\n\n';
+            body += '_This issue was created automatically. Please close it after the fix is complete._';
 
             try {
               const issue = await github.rest.issues.create({
@@ -138,5 +138,5 @@ jobs:
               console.log('Issue created: ' + issue.data.html_url);
             } catch (error) {
               console.error('Failed to create issue:', error);
-              // issueの作成に失敗してもワークフロー全体は失敗させない
+              // Do not fail the whole workflow even if issue creation fails
             }

@@ -33,7 +33,7 @@ jobs:
 
       - name: Run tests
         run: |
-            # テスト処理をここに追加
+            # Add test procedures here
             echo "Testing image: ${{ secrets.IMAGE_NAME }}"
             docker run --rm ${{ secrets.IMAGE_NAME }} p4d -h || true
 
