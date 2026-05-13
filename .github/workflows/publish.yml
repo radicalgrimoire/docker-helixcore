@@ -53,17 +53,17 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}/${{ secrets.IMAGE_NAME }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION="${{ inputs.version }}"
-          echo "P4Dバージョン（タグ用）: $VERSION"
+          echo "P4D version (for tag): $VERSION"
           
-          # P4Dバージョン + ビルド番号タグ
+          # P4D version + build number tag
           docker tag ${{ secrets.IMAGE_NAME }} $IMAGE_ID:$VERSION.$GITHUB_RUN_NUMBER
           docker push $IMAGE_ID:$VERSION.$GITHUB_RUN_NUMBER
 
-          # 最新タグ
+          # Latest tag
           docker tag ${{ secrets.IMAGE_NAME }} $IMAGE_ID:${{ env.TAG_LATEST }}
           docker push $IMAGE_ID:${{ env.TAG_LATEST }}
 
-          # ナイトリータグ（スケジュール実行時のみ）
+          # Nightly tag (scheduled runs only)
           if [ "${{ github.event_name }}" == "schedule" ]; then
             docker tag ${{ secrets.IMAGE_NAME }} $IMAGE_ID:${{ env.TAG_NIGHTLY }}
             docker push $IMAGE_ID:${{ env.TAG_NIGHTLY }}
