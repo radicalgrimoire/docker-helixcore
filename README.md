@@ -1,107 +1,98 @@
 # Docker Helix Core
 
-This repository runs a Perforce Helix Core (P4D) server in a Docker container.  
-The current standard startup flow uses an existing image referenced by p4d/Dockerfile and starts it through docker-compose.yml.
+This repository runs Perforce Helix Core (P4D) in a Docker container.  
+It is primarily intended for development and validation, and starts the helix-p4d container from docker-compose.yml.
 
 ## Overview
 
-- Helix Core container environment for development and validation
-- SSL-based configuration on port 1666
-- Startup health check included
-- Uses an image that contains the case-consistency trigger, CheckCaseTrigger3.py
-- Data is persisted in the Docker volume named servers
+- Exposes port 1666 over SSL
+- Persists server data in the Docker volume named servers
+- Uses a custom network app_net with subnet 172.16.238.0/24
+- Includes a health check that runs p4 -p ssl:1666 info -s
+- Uses the case consistency trigger script CheckCaseTrigger3.py on change submit
 
-## Current Layout
+## Repository Structure
 
-Main files:
-
-- docker-compose.yml: Container startup settings for helix-p4d
-- Makefile: Main operational commands for start, stop, logs, shell, and build
-- p4d/Dockerfile: Runtime image based on ghcr.io/radicalgrimoire/docker-helixcore/helix-p4d:latest
-- build/Dockerfile: Definition used to rebuild the base image yourself
-- build/files/init.sh: Initial setup for server and trigger configuration
-- build/files/run.sh: Server startup and log output
-
-Network and port settings in docker-compose.yml:
-
-- Custom network: app_net (172.16.238.0/24)
-- Container IP: 172.16.238.10
-- Published port: 1666:1666
+- docker-compose.yml: Service definition for helixcore
+- Makefile: Daily operation commands
+- p4d/Dockerfile: Runtime Dockerfile based on ghcr.io/radicalgrimoire/docker-helixcore/helix-p4d:latest
+- p4d/download-certs.sh: Helper script to download certificate archives from GitHub Releases
+- build/Dockerfile: Dockerfile for rebuilding the base image
+- build/docker-build.sh: Build wrapper that assembles --build-arg values from .env and environment variables
+- build/files/init.sh: First-time initialization logic (server setup, login, trigger registration)
+- build/files/run.sh: Startup logic (start server, login attempt, log tailing)
 
 ## Prerequisites
 
 - Docker
-- Docker Compose
-- Make if you want to use the Makefile
-- winpty on Windows if you want to use make shell
+- Docker Compose (docker-compose command)
+- GNU Make (make)
+- winpty on Windows if you use make shell
 
 ## Quick Start
 
-### 1. Start
+| Step | Command | Description |
+| --- | --- | --- |
+| 1 | `make start` | Start the Helix Core container in detached mode. |
+| 2 | `make logs` | Follow container logs to confirm startup and runtime status. |
+| 3 | `make shell` | Open an interactive shell inside the running container. |
+| 4 | `make stop` | Stop the running container without removing it. |
+| 5 | `make remove` | Remove the container and network created by docker-compose down. |
 
-```bash
-make start
-```
-
-Or:
+Direct docker-compose command:
 
 ```bash
 docker-compose -f docker-compose.yml -p helixcore up -d
 ```
 
-### 2. View Logs
-
-```bash
-make logs
-```
-
-### 3. Open a Shell
-
-```bash
-make shell
-```
-
-### 4. Stop
-
-```bash
-make stop
-```
-
-### 5. Remove the Container
-
-```bash
-make remove
-```
-
 ## Makefile Commands
 
-- make start: Start the container
-- make stop: Stop the container
+- make start: Start containers
+- make stop: Stop containers
 - make remove: Run docker-compose down
-- make logs: Follow container logs
-- make shell: Open a shell inside the container
-- make build: Build the image
+- make logs: Follow logs
+- make shell: Open bash in the container
+- make build: Build image from compose definition
 - make rebuild: Rebuild without cache
+- make change-password: Change the super user password
+
+Example for change-password:
+
+```bash
+OLD_PASS=<current-password> NEW_PASS=<new-password> make change-password
+```
+
+After changing the password, update P4PASSWD in your compose, env, or secret settings before restart.
+
+## Network and Persistence
+
+- Container name: helix-p4d
+- Static IP: 172.16.238.10
+- Published port: 1666:1666
+- Volume: servers:/opt/perforce/servers
+
+Data remains available across container recreation unless you remove the volume.
 
 ## Environment Variables
 
-Main environment variables used by this project:
+Main variables used by this project:
 
-| Variable | Description | Example value |
+| Variable | Description | Example |
 | --- | --- | --- |
-| P4NAME | Perforce server name | Any value |
-| P4PORT | Perforce server port | ssl:1666 |
-| P4USER | Administrator user | super |
-| P4PASSWD | Administrator password | Any value |
-| P4HOME | Perforce home directory | /opt/perforce |
-| P4ROOT | Perforce root directory | Example: /opt/perforce/servers/your-server/root |
-| CASE_INSENSITIVE | Case-sensitivity setting | 0 |
+| P4NAME | Perforce server name | master |
+| P4PORT | Server port | ssl:1666 |
+| P4USER | Admin user | super |
+| P4PASSWD | Admin password | any secure value |
+| P4HOME | Perforce home | /opt/perforce/servers |
+| P4ROOT | Server root | /opt/perforce/servers/master |
+| CASE_INSENSITIVE | Case mode (0 = case-sensitive, 1 = case-insensitive) | 0 |
+| P4CONFIG | p4 config path | /opt/perforce/.p4config |
 
 Notes:
 
-- The current docker-compose.yml does not declare environment variables explicitly.
-- Default behavior depends on the referenced image configuration.
-- If you want to pin values, add them under services.helixcore.environment in docker-compose.yml.
+- The current docker-compose.yml does not explicitly define environment values.
+- Effective values depend on the base image configuration and build args.
+- To pin values, add services.helixcore.environment in docker-compose.yml.
 
 Example:
 
@@ -109,91 +100,18 @@ Example:
 services:
   helixcore:
     environment:
-      P4NAME: helix
+      P4NAME: master
       P4PORT: ssl:1666
       P4USER: super
       P4PASSWD: your-password
+      P4ROOT: /opt/perforce/servers/master
+      CASE_INSENSITIVE: 0
 ```
 
-## Data Persistence
+## Building Images
 
-- Volume: servers
-- Mount point: /opt/perforce/servers
-
-Data is preserved across container recreation unless you delete the volume.
-
-## First-Boot super Password Rotation
-
-When the container starts for the first time with a new volume, the password for the super user is rotated automatically.
-
-### Conditions
-
-This runs only when both conditions are met:
-
-- The volume is new and not an existing one
-- This is the first startup; after a successful rotation, the marker file is removed so it does not run again
-
-### Storage Location
-
-After rotation, the super password is stored in the following file:
-
-```text
-<parent directory of P4ROOT>/p4password/super.password
-```
-
-With the default layout where `P4ROOT=/opt/perforce/servers/<P4NAME>/root`:
-
-```text
-/opt/perforce/servers/<P4NAME>/p4password/super.password
-```
-
-If P4ROOT is changed, this path changes as well.
-
-### How to Check It
-
-To expand P4ROOT inside the container and display the password file, run:
-
-```bash
-docker exec <container-name> sh -lc 'cat "$(dirname "$P4ROOT")/p4password/super.password"'
-```
-
-If you do not know the value of P4ROOT, enter the container with make shell and inspect it there.
-
-### How to Disable It
-
-If you do not want automatic rotation, delete the marker file on the volume before the first startup.
-
-```bash
-# Example: remove the marker on the volume before the first startup
-docker run --rm -v servers:/opt/perforce/servers busybox \
-  rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
-```
-
-If you have changed P4ROOT, replace the path above with the actual value of P4ROOT inside the container, for example `P4ROOT/.rotate_super_password_on_first_boot`.
-
-### Impact on Existing Environments
-
-Existing volumes do not contain the marker file, so automatic rotation does not run.  
-Existing P4PASSWD values remain valid.
-
-## Connecting
-
-Example connection settings for P4V or the CLI:
-
-- Server: ssl:localhost:1666
-- User: super or the user you configured
-- Password: your configured value
-
-CLI example:
-
-```bash
-p4 -p ssl:localhost:1666 -u super login
-```
-
-## Custom Builds
-
-For standard usage, the prebuilt-image flow through p4d/Dockerfile is usually sufficient.  
-Use build/ only when you need to create a custom image.
+For standard operation, the image referenced by p4d/Dockerfile is sufficient.  
+Use build/ when you need to rebuild a custom base image.
 
 ```bash
 make build
@@ -206,20 +124,91 @@ Or:
 bash build/docker-build.sh Dockerfile ./build
 ```
 
+build/docker-build.sh passes these values as --build-arg:
+
+- Variables defined in build/.env
+- Runtime environment variables (P4NAME, P4PORT, P4USER, P4PASSWD, P4HOME, P4ROOT, CASE_INSENSITIVE)
+
+## Startup Behavior
+
+build/files/init.sh (first-time configuration) mainly does the following:
+
+- Initializes the server with configure-helix-p4d.sh
+- Runs p4 trust and p4 login
+- Sets server configuration values such as server.extensions.allow.unsigned
+- Registers trigger:
+  - CheckCaseTrigger change-submit //... "python3 /usr/local/bin/CheckCaseTrigger3.py %changelist% port=ssl:1666 user=super"
+- Imports admin group definition from admin.txt
+
+build/files/run.sh (every startup) mainly does the following:
+
+- Starts the server with p4dctl start -t p4d ${P4NAME}
+- Starts cron
+- Attempts login using P4PASSWD
+- Rewrites P4CONFIG only when login succeeds
+- Tails P4ROOT/logs/log
+
+If P4PASSWD does not match the actual server password in an existing volume, startup continues but automatic login fails.
+
+## Connection Example
+
+For both P4V and CLI:
+
+- Server: ssl:localhost:1666
+- User: super (or your configured user)
+- Password: the value currently configured on the server
+
+CLI:
+
+```bash
+p4 -p ssl:localhost:1666 -u super login
+```
+
+## Certificate Download Helper
+
+p4d/download-certs.sh downloads and extracts certificate archives from GitHub Releases.
+
+```bash
+bash p4d/download-certs.sh --help
+```
+
+Main options:
+
+- -r, --repo: Repository in owner/repository format
+- -t, --token: GitHub token
+- -d, --dir: Download directory
+- -y, --yes: Skip confirmation prompts
+
+## CI/CD Workflows
+
+The .github/workflows directory includes:
+
+- build-test.yml: Build and basic plus integration tests for branches
+- build-develop.yml: Scheduled or manual pipeline from test to publish
+- test.yml: Reusable test workflow
+- get-version.yml: Extracts p4d -V from built image artifact
+- publish.yml: Publishes tagged images to GHCR
+
+Main publish tags:
+
+- <version>.<run_number>
+- latest
+- nightly (only on scheduled runs)
+
 ## Troubleshooting
 
-### Startup Fails
+If startup fails:
 
 - Check whether port 1666 is already in use
-- Review errors with make logs
+- Check errors with make logs
 - Check container state with docker ps -a
 
-### Cannot Connect
+If connection fails:
 
-- Verify that the target server is ssl:localhost:1666
-- Certificate trust may be required on the first connection
+- Verify target server is ssl:localhost:1666
+- First connection may require p4 trust
 
-### Check Status
+Server status check example:
 
 ```bash
 make shell
@@ -228,11 +217,17 @@ p4dctl status
 
 ## References
 
-- [Perforce Helix Core documentation](https://www.perforce.com/manuals/p4sag/)
-- [Container image](https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d)
-- [Helix Authentication Extension](https://github.com/perforce/helix-authentication-extension)
+- Perforce Helix Core Documentation: https://www.perforce.com/manuals/p4sag/
+- Container Image: https://github.com/radicalgrimoire/docker-helixcore/pkgs/container/docker-helixcore%2Fhelix-p4d
+- Helix Authentication Extension: https://github.com/perforce/helix-authentication-extension
 
 ## Notes
 
-This setup is intended for development and validation use.  
-For production use, design authentication and authorization, network restrictions, backup, monitoring, and certificate operations separately.
+This setup is intended for development and validation.  
+For production, at minimum, design and validate:
+
+- Authentication and authorization
+- Network restrictions
+- Backup and restore procedures
+- Monitoring and alerting
+- Certificate distribution and rotation
