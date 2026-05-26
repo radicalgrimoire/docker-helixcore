@@ -37,10 +37,17 @@ login_with_password() {
 	return 0
 }
 
+CURRENT_PASSWORD=""
 if login_with_password "${P4PASSWD}"; then
-	write_p4config "${P4PASSWD}"
-else
-	echo "This appears to be an existing environment, so startup will continue even though super login failed with P4PASSWD." >&2
+	CURRENT_PASSWORD="${P4PASSWD}"
+fi
+
+if [ -z "${CURRENT_PASSWORD}" ]; then
+	echo "This appears to be an existing environment, so startup will continue even though super login failed." >&2
+fi
+
+if [ -n "${CURRENT_PASSWORD}" ]; then
+	write_p4config "${CURRENT_PASSWORD}"
 fi
 
 if [ -f /opt/perforce/.p4trust ]; then

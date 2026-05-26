@@ -5,10 +5,10 @@ on:
   workflow_call:
     outputs:
       version:
-        description: "タグ用にサニタイズされた helix-p4d のバージョン"
+        description: "Sanitized helix-p4d version for tagging"
         value: ${{ jobs.get-version.outputs.version }}
       version_raw:
-        description: "生の helix-p4d バージョン"
+        description: "Raw helix-p4d version"
         value: ${{ jobs.get-version.outputs.version_raw }}
 
 jobs:
