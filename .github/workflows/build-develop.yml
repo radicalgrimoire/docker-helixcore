@@ -2,21 +2,18 @@ name: build-develop
 
 run-name: >
   ${{ github.event_name == 'schedule' && 'Scheduled Build' || 'Manual Build' }}
-  ${{ inputs.dockerfile || 'Dockerfile' }}  
+  ${{ env.DOCKERFILE }}
   by @${{ github.actor }}
+
+env:
+  DOCKERFILE: 'Dockerfile'
 
 on:
   schedule:
     # JST 朝9時 = UTC 0時（JST = UTC + 9時間）
     - cron: '0 0 * * *'
   
-  workflow_dispatch:
-    inputs:
-      dockerfile:
-        description: 'Dockerfile to use for building'
-        required: false
-        default: 'Dockerfile'
-        type: string
+  workflow_dispatch: {}
  
 jobs:
   # Display commit information
@@ -53,8 +50,8 @@ jobs:
     needs: [info, check-day]
     uses: ./.github/workflows/test.yml
     with:
-      # スケジュール実行時はDockerfile、手動実行時は選択されたファイルを使用
-      docker_files_name: ${{ inputs.dockerfile || 'Dockerfile' }}
+      # Dockerfile は固定の環境変数 `env.DOCKERFILE` を使用
+      docker_files_name: ${{ env.DOCKERFILE }}
       should_push: ${{ needs.check-day.outputs.should-push }}
     secrets: inherit
 
@@ -97,7 +94,7 @@ jobs:
             if (needs.push?.result === 'failure') failedJobs.push('push');
             
             const triggerType = '${{ github.event_name }}' === 'schedule' ? 'スケジュール実行' : '手動実行';
-            const dockerfile = '${{ inputs.dockerfile || 'Dockerfile' }}';
+            const dockerfile = '${{ env.DOCKERFILE }}';
             const currentDate = new Date().toLocaleDateString('ja-JP');
             const currentDateTime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
             

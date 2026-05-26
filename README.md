@@ -37,41 +37,14 @@ Network and port settings in docker-compose.yml:
 
 ## Quick Start
 
-### 1. Start
-
-```bash
-make start
-```
-
-Or:
-
-```bash
-docker-compose -f docker-compose.yml -p helixcore up -d
-```
-
-### 2. View Logs
-
-```bash
-make logs
-```
-
-### 3. Open a Shell
-
-```bash
-make shell
-```
-
-### 4. Stop
-
-```bash
-make stop
-```
-
-### 5. Remove the Container
-
-```bash
-make remove
-```
+| Step | Action | Command |
+| --- | --- | --- |
+| 1 | Start | `make start` |
+| 1 (alternative) | Start | `docker-compose -f docker-compose.yml -p helixcore up -d` |
+| 2 | View Logs | `make logs` |
+| 3 | Open a Shell | `make shell` |
+| 4 | Stop | `make stop` |
+| 5 | Remove the Container | `make remove` |
 
 ## Makefile Commands
 
@@ -122,59 +95,13 @@ services:
 
 Data is preserved across container recreation unless you delete the volume.
 
-## First-Boot super Password Rotation
+## Password Management Policy
 
-When the container starts for the first time with a new volume, the password for the super user is rotated automatically.
+This image does not rotate the super password automatically.
+The administrator user `super` is not intended to have its password changed during normal operation. If you change it, do so at your own responsibility.
 
-### Conditions
-
-This runs only when both conditions are met:
-
-- The volume is new and not an existing one
-- This is the first startup; after a successful rotation, the marker file is removed so it does not run again
-
-### Storage Location
-
-After rotation, the super password is stored in the following file:
-
-```text
-<parent directory of P4ROOT>/p4password/super.password
-```
-
-With the default layout where `P4ROOT=/opt/perforce/servers/<P4NAME>/root`:
-
-```text
-/opt/perforce/servers/<P4NAME>/p4password/super.password
-```
-
-If P4ROOT is changed, this path changes as well.
-
-### How to Check It
-
-To expand P4ROOT inside the container and display the password file, run:
-
-```bash
-docker exec <container-name> sh -lc 'cat "$(dirname "$P4ROOT")/p4password/super.password"'
-```
-
-If you do not know the value of P4ROOT, enter the container with make shell and inspect it there.
-
-### How to Disable It
-
-If you do not want automatic rotation, delete the marker file on the volume before the first startup.
-
-```bash
-# Example: remove the marker on the volume before the first startup
-docker run --rm -v servers:/opt/perforce/servers busybox \
-  rm -f /opt/perforce/servers/<P4NAME>/root/.rotate_super_password_on_first_boot
-```
-
-If you have changed P4ROOT, replace the path above with the actual value of P4ROOT inside the container, for example `P4ROOT/.rotate_super_password_on_first_boot`.
-
-### Impact on Existing Environments
-
-Existing volumes do not contain the marker file, so automatic rotation does not run.  
-Existing P4PASSWD values remain valid.
+Use your operational process to manage and rotate credentials.
+At startup, the container attempts login with P4PASSWD and proceeds even if login fails in an existing environment.
 
 ## Connecting
 
