@@ -51,7 +51,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
     # Use fixed Dockerfile for both scheduled and manual runs.
-    docker_files_name: ${{ env.DOCKERFILE }}
+      docker_files_name: ${{ env.DOCKERFILE }}
       should_push: ${{ needs.check-day.outputs.should-push }}
     secrets: inherit
 
