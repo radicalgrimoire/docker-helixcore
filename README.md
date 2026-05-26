@@ -149,6 +149,7 @@ build/files/run.sh (every startup) mainly does the following:
 - Tails P4ROOT/logs/log
 
 If P4PASSWD does not match the actual server password in an existing volume, startup continues but automatic login fails.
+The administrator user super is not intended to have its password changed during normal operation. If you change it, do so at your own responsibility.
 
 ## Connection Example
 

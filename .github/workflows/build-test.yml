@@ -1,9 +1,12 @@
 name: build-test
 
 run-name: >
-  Build Test: ${{ inputs.dockerfile || 'Dockerfile' }} 
+  Build Test: ${{ env.DOCKERFILE }}
   (${{ github.event_name }})
   by @${{ github.actor }}
+
+env:
+  DOCKERFILE: 'Dockerfile'
 
 on:
   push:
@@ -13,13 +16,7 @@ on:
       - 'build/**'
       - '.github/workflows/build-test.yml'
   
-  workflow_dispatch:
-    inputs:
-      dockerfile:
-        description: 'Dockerfile to use for building'
-        required: false
-        default: 'Dockerfile'
-        type: string
+  workflow_dispatch: {}
 
 
 jobs:
@@ -33,7 +30,7 @@ jobs:
         run: |
           echo "=== Build Test Information ==="
           echo "Event: ${{ github.event_name }}"
-          echo "Dockerfile: ${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "Dockerfile: ${{ env.DOCKERFILE }}"
           echo "Triggered by: ${{ github.actor }}"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
@@ -41,7 +38,7 @@ jobs:
 
       - name: Build image
         run: |
-          DOCKERFILE_NAME="${{ inputs.dockerfile || 'Dockerfile' }}"
+          DOCKERFILE_NAME="${{ env.DOCKERFILE }}"
           echo "Building Docker image with $DOCKERFILE_NAME..."
           bash ./build/docker-build.sh "$DOCKERFILE_NAME" ./build
         env:
@@ -193,7 +190,7 @@ jobs:
           echo "=== Build test completed ==="
           echo "Docker image build succeeded"
           echo "Basic functionality tests completed"
-          echo "Dockerfile used: ${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "Dockerfile used: ${{ env.DOCKERFILE }}"
           
           # Show final size info in summary
           IMAGE_SIZE=$(docker images ${{ secrets.IMAGE_NAME }} --format "{{.Size}}")
@@ -203,7 +200,7 @@ jobs:
           echo "## Build Test Result Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Execution Info" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dockerfile**: \`${{ inputs.dockerfile || 'Dockerfile' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: \`${{ env.DOCKERFILE }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Name**: \`${{ secrets.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Size**: $IMAGE_SIZE" >> $GITHUB_STEP_SUMMARY
           echo "- **Executed At**: $(date '+%Y-%m-%d %H:%M:%S JST')" >> $GITHUB_STEP_SUMMARY
