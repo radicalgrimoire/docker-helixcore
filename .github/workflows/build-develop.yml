@@ -49,8 +49,6 @@ jobs:
     needs: [info, check-day]
     uses: ./.github/workflows/test.yml
     with:
-    # Use fixed Dockerfile for both scheduled and manual runs.
-      docker_files_name: ${{ env.DOCKERFILE }}
       should_push: ${{ needs.check-day.outputs.should-push }}
     secrets: inherit
 
@@ -93,7 +91,7 @@ jobs:
             if (needs.push?.result === 'failure') failedJobs.push('push');
             
             const triggerType = '${{ github.event_name }}' === 'schedule' ? 'Scheduled run' : 'Manual run';
-            const dockerfile = '${{ env.DOCKERFILE }}';
+            const dockerfile = 'Dockerfile';
             const currentDate = new Date().toLocaleDateString('ja-JP');
             const currentDateTime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
             
