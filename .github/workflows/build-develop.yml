@@ -7,6 +7,10 @@ run-name: >
 env:
   DOCKERFILE: 'Dockerfile'
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   schedule:
     # 9:00 JST = 0:00 UTC (JST = UTC + 9 hours)
@@ -66,6 +70,9 @@ jobs:
     uses: ./.github/workflows/publish.yml
     needs: [check-day, get-version]
     if: needs.check-day.outputs.should-push == 'true'
+    permissions:
+      contents: read
+      packages: write
     with:
       version: ${{ needs.get-version.outputs.version }}
       version_raw: ${{ needs.get-version.outputs.version_raw }}
